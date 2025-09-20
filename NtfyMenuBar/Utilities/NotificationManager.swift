@@ -36,7 +36,7 @@ class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
         }
     }
     
-    func showNotification(for message: NtfyMessage) {
+    func showNotification(for message: NtfyMessage, settings: NtfySettings = SettingsManager.loadSettings()) {
         let content = UNMutableNotificationContent()
         
         // Enhanced branding with ntfy prefix and priority indicators
@@ -52,8 +52,8 @@ class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
         // Enhanced subtitle with server context
         content.subtitle = formatNotificationSubtitle(for: message)
         
-        // Priority-based sound selection
-        content.sound = getSoundForPriority(message.priority)
+        // Enhanced sound selection based on user preferences
+        content.sound = getSoundForMessage(message, settings: settings)
         
         // Set notification category for interactive actions
         content.categoryIdentifier = "NTFY_MESSAGE"
@@ -117,12 +117,12 @@ class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
             openDashboard()
             
         case "OPEN_DASHBOARD":
-            // User pressed "Open Dashboard" button
+            // User pressed "Open dashboard" button
             print("📱 User requested dashboard: \(userInfo)")
             openDashboard()
             
         case "MARK_READ":
-            // User pressed "Mark Read" button
+            // User pressed "Mark read" button
             print("📱 User marked as read: \(userInfo)")
             if let messageId = userInfo["messageId"] as? String {
                 clearNotification(withId: messageId)
@@ -158,13 +158,13 @@ class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
         // Create actions for interactive notifications
         let openDashboardAction = UNNotificationAction(
             identifier: "OPEN_DASHBOARD",
-            title: "Open Dashboard",
+            title: "Open dashboard",
             options: [.foreground]
         )
         
         let markReadAction = UNNotificationAction(
             identifier: "MARK_READ",
-            title: "Mark Read",
+            title: "Mark read",
             options: []
         )
         
@@ -242,9 +242,25 @@ class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
         return subtitleComponents.joined(separator: " • ")
     }
     
+    private func getSoundForMessage(_ message: NtfyMessage, settings: NtfySettings) -> UNNotificationSound {
+        let priority = message.priority ?? 3
+
+        // Use critical sound for high priority if enabled
+        if settings.customSoundForHighPriority && priority >= 4 {
+            return .defaultCritical
+        }
+
+        // Use custom sound from settings
+        if let soundFileName = settings.notificationSound.fileName {
+            return UNNotificationSound(named: UNNotificationSoundName(soundFileName))
+        }
+
+        return .default
+    }
+
     private func getSoundForPriority(_ priority: Int?) -> UNNotificationSound {
         guard let priority = priority else { return .default }
-        
+
         switch priority {
         case 5: return .defaultCritical // Max/Urgent
         case 4: return .defaultCritical // High

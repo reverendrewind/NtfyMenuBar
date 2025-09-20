@@ -1,5 +1,77 @@
 # TODO - NtfyMenuBar
 
+*Last Updated: 2025-01-20*
+*Feasibility Analysis Completed: 2025-01-20*
+
+## Priority Roadmap
+
+### 🟢 HIGH PRIORITY - Feasible & High Value
+*Features that can be implemented with existing ntfy HTTP API and provide significant user value*
+
+#### Access Token Management - API Available ✅
+- [ ] Generate new access tokens - `POST /v1/account/token`
+- [ ] Copy tokens to clipboard securely
+- [ ] Token regeneration and management UI
+- [ ] Secure token storage in Keychain (already implemented)
+
+#### UI/UX Improvements - Client-Side ✅
+- [x] Dark/Light mode sync with system *(Already implemented)*
+- [ ] Customizable notification sounds
+- [ ] Message grouping by topic/priority
+- [ ] Keyboard shortcuts for common actions
+- [ ] Notification snoozing
+- [ ] Do Not Disturb scheduling
+
+#### Connection Improvements - Client-Side ✅
+- [x] Auto-reconnect with exponential backoff *(Already implemented)*
+- [ ] Network change detection and handling
+- [ ] Connection quality indicator
+- [ ] Fallback server support
+
+### 🟡 MEDIUM PRIORITY - Feasible with Limitations
+*Features possible but with constraints or workarounds*
+
+#### Message Management (Limited Capabilities)
+- [ ] View recent message history (client-side caching via SSE)
+- [ ] Delete individual messages (if API permits)
+- [ ] Export message logs to CSV/JSON (cached messages only)
+- [ ] Message filtering by priority/topic (client-side)
+
+#### Multi-Server Support
+- [ ] Support for managing multiple ntfy servers
+- [ ] Server switching in UI
+- [ ] Per-server credential management
+
+#### Integration Features
+- [ ] Export to other services (Slack, Discord, etc.)
+- [ ] Webhook forwarding
+- [ ] Custom notification actions
+- [ ] AppleScript support for automation
+- [ ] Shortcuts app integration
+
+### 🔴 LOW PRIORITY - Limited Feasibility
+*Features that are difficult or impossible with current ntfy API*
+
+#### Topic Statistics - ⚠️ API Limitations
+- [ ] ~~Subscriber count~~ *(Not available via HTTP API)*
+- [ ] ~~Message count~~ *(Not available via HTTP API)*
+- [ ] ~~Last activity timestamp~~ *(Not available via HTTP API)*
+
+#### Server Statistics & Monitoring - ❌ Not Possible
+- [ ] ~~Server health status indicator~~ *(CLI/admin only)*
+- [ ] ~~Real-time message throughput graph~~ *(No API support)*
+- [ ] ~~Active subscriber counts~~ *(Not exposed via API)*
+- [ ] ~~Storage usage metrics~~ *(CLI/admin only)*
+- [ ] ~~Uptime monitoring and history~~ *(No API support)*
+- [ ] ~~Server version information~~ *(CLI only)*
+- [ ] ~~Performance metrics (CPU, memory)~~ *(Not available)*
+
+#### Server Configuration - ❌ Admin/CLI Only
+- [ ] ~~View current server configuration~~ *(Requires server access)*
+- [ ] ~~Modify server settings through API~~ *(Not supported)*
+- [ ] ~~Backup server configurations~~ *(File system access required)*
+- [ ] ~~Server maintenance mode toggle~~ *(CLI only)*
+
 ## Feature Ideas
 
 ### ntfy Server Management
@@ -132,6 +204,49 @@ Add comprehensive ntfy server management capabilities directly within the menu b
 - [ ] Performance testing with high message volume
 - [ ] Multi-server connection testing
 - [ ] Error handling test scenarios
+
+---
+
+## 📊 Feasibility Analysis Summary
+
+### Research Findings (January 2025)
+
+After comprehensive research of ntfy's HTTP API capabilities, the following constraints were identified:
+
+#### ✅ **Available HTTP API Endpoints:**
+- **Account Management**: Personal access token generation, password changes
+- **Authentication**: Basic auth and Bearer tokens
+- **Publishing/Subscribing**: Full message flow support
+
+#### ⚠️ **Limited API Support:**
+- **Message History**: Only cached messages accessible, no server-side search
+- **Topic Management**: Basic operations only, no statistics
+- **Token Management**: Generation available, but limited administrative controls
+
+#### ❌ **No HTTP API Support:**
+- **User Management**: All user operations are CLI-only (ntfy user commands)
+- **Server Statistics**: Health, performance, storage metrics
+- **Server Configuration**: All configuration is file-based
+- **Topic Statistics**: Subscriber counts, message counts, activity timestamps
+- **Advanced Monitoring**: Real-time throughput, uptime tracking
+
+#### 🔧 **CLI-Only Features:**
+Most server administration requires CLI access:
+- **User Management**: `ntfy user add/del/list/change-pass/change-role`
+- Server configuration changes
+- Database management and backups
+- Performance monitoring
+- System health checks
+
+### Recommendation
+
+Focus development on **HIGH PRIORITY** items that provide immediate user value and are technically feasible. The original TODO scope was overly ambitious given ntfy's API limitations. A more realistic approach would be:
+
+1. **Phase 1**: Personal access token management and enhanced authentication
+2. **Phase 2**: UI/UX improvements and connection enhancements
+3. **Phase 3**: Client-side message management and multi-server support
+
+**Note**: User management features were removed from the roadmap as ntfy only supports CLI-based user administration (`ntfy user` commands) with no HTTP API endpoints available.
 
 ---
 

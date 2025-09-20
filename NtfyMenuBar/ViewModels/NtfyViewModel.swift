@@ -18,6 +18,11 @@ class NtfyViewModel: ObservableObject {
     
     private var ntfyService: NtfyService?
     private var cancellables = Set<AnyCancellable>()
+
+    // Expose service for UI access to connection quality
+    var service: NtfyService {
+        return ntfyService ?? NtfyService(settings: settings)
+    }
     
     // Closure to open settings window (set by StatusBarController)
     var openSettingsAction: (() -> Void)?

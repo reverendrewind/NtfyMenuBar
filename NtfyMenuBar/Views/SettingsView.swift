@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import UserNotifications
 
 struct SettingsView: View {
     @EnvironmentObject var viewModel: NtfyViewModel
@@ -24,15 +25,24 @@ struct SettingsView: View {
     @State private var maxRecentMessages: Int = 20
     @State private var autoConnect: Bool = true
     @State private var appearanceMode: AppearanceMode = .system
+    @State private var notificationSound: NotificationSound = .default
+    @State private var customSoundForHighPriority: Bool = true
     @State private var selectedTab: SettingsTab = .connection
+    @State private var fallbackServers: [NtfyServer] = []
+    @State private var enableFallbackServers: Bool = false
+    @State private var fallbackRetryDelay: Double = 30.0
+    @State private var editingServer: NtfyServer?
+    @State private var showingServerEditor: Bool = false
 
     enum SettingsTab: String, CaseIterable {
         case connection = "Connection"
+        case fallbacks = "Fallback servers"
         case preferences = "Preferences"
 
         var systemImage: String {
             switch self {
             case .connection: return "network"
+            case .fallbacks: return "server.rack"
             case .preferences: return "gearshape"
             }
         }
@@ -42,12 +52,8 @@ struct SettingsView: View {
         VStack(alignment: .leading, spacing: 0) {
             // Header
             VStack(alignment: .leading, spacing: 12) {
-                Text("Settings")
-                    .font(.title2)
-                    .fontWeight(.semibold)
-
                 // Tab Selection
-                Picker("Settings Tab", selection: $selectedTab) {
+                Picker("", selection: $selectedTab) {
                     ForEach(SettingsTab.allCases, id: \.self) { tab in
                         Label(tab.rawValue, systemImage: tab.systemImage)
                             .tag(tab)
@@ -64,6 +70,8 @@ struct SettingsView: View {
                     switch selectedTab {
                     case .connection:
                         connectionSettingsView
+                    case .fallbacks:
+                        fallbackServersView
                     case .preferences:
                         preferencesSettingsView
                     }
@@ -102,7 +110,7 @@ struct SettingsView: View {
     private var connectionSettingsView: some View {
         VStack(alignment: .leading, spacing: 20) {
             VStack(alignment: .leading, spacing: 12) {
-                Text("Server Configuration")
+                Text("Server configuration")
                     .font(.headline)
 
                 VStack(alignment: .leading, spacing: 8) {
@@ -149,18 +157,18 @@ struct SettingsView: View {
                         // Compact add topic field
                         VStack(alignment: .leading, spacing: 4) {
                             HStack(spacing: 6) {
-                                TextField("Add topics (comma-separated)", text: $newTopic)
+                                TextField("Add topics", text: $newTopic)
                                     .textFieldStyle(.roundedBorder)
                                     .frame(maxWidth: 200)
                                     .onSubmit {
                                         addTopic()
                                     }
-                                    .onChange(of: newTopic) { _ in
+                                    .onChange(of: newTopic) {
                                         // Clear error when user types
                                         if !topicValidationError.isEmpty && !topicValidationError.contains("Added") {
                                             topicValidationError = ""
                                         }
-                                        // Auto-lowercase but preserve commas and spaces around them
+                                        // Auto-lowercase but preserve separators (commas and spaces)
                                         newTopic = newTopic.lowercased()
                                     }
 
@@ -182,11 +190,11 @@ struct SettingsView: View {
                                 }
                                 .foregroundColor(topicValidationError.contains("Added") ? .green : .red)
                             } else if topics.isEmpty {
-                                Text("Example: alerts, news or alerts,news,updates")
+                                Text("Examples: 'alerts news' or 'alerts,news' or just 'alerts'")
                                     .font(.caption2)
                                     .foregroundColor(.secondary)
                             } else {
-                                Text("Tip: Add multiple topics with commas (e.g., topic1,topic2)")
+                                Text("Tip: Separate with spaces or commas (topic1 topic2)")
                                     .font(.caption2)
                                     .foregroundColor(.secondary)
                             }
@@ -199,7 +207,7 @@ struct SettingsView: View {
                 Text("Authentication")
                     .font(.headline)
 
-                Picker("Authentication Method", selection: $authMethod) {
+                Picker("", selection: $authMethod) {
                     ForEach(AuthenticationMethod.allCases, id: \.self) { method in
                         Text(method.displayName).tag(method)
                     }
@@ -227,7 +235,7 @@ struct SettingsView: View {
                         }
                     } else {
                         VStack(alignment: .leading, spacing: 8) {
-                            Text("Access Token")
+                            Text("Access token")
                                 .font(.caption)
                                 .foregroundColor(.secondary)
                             SecureField("tk_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", text: $accessToken)
@@ -249,13 +257,13 @@ struct SettingsView: View {
                 Text("Notifications")
                     .font(.headline)
 
-                Toggle("Enable Notifications", isOn: $enableNotifications)
+                Toggle("Enable notifications", isOn: $enableNotifications)
 
-                Toggle("Auto-connect at Launch", isOn: $autoConnect)
+                Toggle("Auto-connect at launch", isOn: $autoConnect)
                     .help("Automatically connect to the server when the app starts")
 
                 HStack {
-                    Text("Recent Messages: \(maxRecentMessages)")
+                    Text("Recent messages: \(maxRecentMessages)")
                     Spacer()
                     Stepper("", value: $maxRecentMessages, in: 5...100, step: 5)
                 }
@@ -271,6 +279,157 @@ struct SettingsView: View {
                     }
                 }
                 .pickerStyle(.segmented)
+            }
+
+            VStack(alignment: .leading, spacing: 12) {
+                Text("Notification sounds")
+                    .font(.headline)
+
+                Picker("Sound", selection: $notificationSound) {
+                    ForEach(NotificationSound.allCases, id: \.self) { sound in
+                        Text(sound.displayName).tag(sound)
+                    }
+                }
+                .pickerStyle(.menu)
+
+                Toggle("Use critical sound for high priority messages", isOn: $customSoundForHighPriority)
+                    .help("Play critical alert sound for priority 4 and 5 messages")
+
+                if notificationSound != .default {
+                    Button("Test sound") {
+                        testNotificationSound()
+                    }
+                    .buttonStyle(.bordered)
+                }
+            }
+        }
+    }
+
+    private var fallbackServersView: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            // Configuration section
+            VStack(alignment: .leading, spacing: 12) {
+                Text("Fallback server configuration")
+                    .font(.headline)
+
+                Toggle("Enable fallback servers", isOn: $enableFallbackServers)
+                    .help("Automatically try fallback servers when primary server fails")
+
+                if enableFallbackServers {
+                    VStack(alignment: .leading, spacing: 4) {
+                        HStack {
+                            Text("Retry delay: \(Int(fallbackRetryDelay)) seconds")
+                            Spacer()
+                            Stepper("", value: $fallbackRetryDelay, in: 10...300, step: 10)
+                        }
+                        Text("Time to wait before retrying failed servers")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                }
+            }
+
+            // Server management section
+            if enableFallbackServers {
+                VStack(alignment: .leading, spacing: 12) {
+                    HStack {
+                        Text("Configured servers")
+                            .font(.headline)
+                        Spacer()
+                        Button("Add server") {
+                            editingServer = NtfyServer()
+                            showingServerEditor = true
+                        }
+                        .buttonStyle(.borderedProminent)
+                    }
+
+                    if fallbackServers.isEmpty {
+                        VStack(spacing: 8) {
+                            Image(systemName: "server.rack")
+                                .font(.title2)
+                                .foregroundColor(.secondary)
+                            Text("No fallback servers configured")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                            Text("Add servers to provide automatic failover when the primary server is unavailable")
+                                .font(.caption2)
+                                .foregroundColor(.secondary)
+                                .multilineTextAlignment(.center)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 20)
+                    } else {
+                        VStack(spacing: 8) {
+                            ForEach(Array(fallbackServers.enumerated()), id: \.element.id) { index, server in
+                                HStack {
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        Text(server.displayName)
+                                            .font(.body)
+                                            .fontWeight(.medium)
+                                        Text(server.cleanURL)
+                                            .font(.caption)
+                                            .foregroundColor(.secondary)
+                                        if !server.username.isEmpty {
+                                            Text("User: \(server.username)")
+                                                .font(.caption2)
+                                                .foregroundColor(.blue)
+                                        }
+                                    }
+
+                                    Spacer()
+
+                                    VStack(spacing: 4) {
+                                        Toggle("", isOn: Binding(
+                                            get: { server.isEnabled },
+                                            set: { newValue in
+                                                fallbackServers[index].isEnabled = newValue
+                                            }
+                                        ))
+                                        .help("Enable/disable this server")
+
+                                        HStack(spacing: 4) {
+                                            Button("Edit") {
+                                                editingServer = server
+                                                showingServerEditor = true
+                                            }
+                                            .buttonStyle(.bordered)
+                                            .controlSize(.small)
+
+                                            Button("Delete") {
+                                                fallbackServers.remove(at: index)
+                                            }
+                                            .buttonStyle(.bordered)
+                                            .controlSize(.small)
+                                            .foregroundColor(.red)
+                                        }
+                                    }
+                                }
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 8)
+                                .background(server.isEnabled ? Color.green.opacity(0.1) : Color.secondary.opacity(0.1))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 8)
+                                        .stroke(server.isEnabled ? Color.green.opacity(0.3) : Color.clear, lineWidth: 1)
+                                )
+                                .cornerRadius(8)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        .sheet(isPresented: $showingServerEditor) {
+            ServerEditorView(
+                server: $editingServer,
+                isPresented: $showingServerEditor
+            ) { editedServer in
+                if let editedServer = editedServer {
+                    if let index = fallbackServers.firstIndex(where: { $0.id == editedServer.id }) {
+                        fallbackServers[index] = editedServer
+                    } else {
+                        fallbackServers.append(editedServer)
+                    }
+                }
             }
         }
     }
@@ -301,9 +460,21 @@ struct SettingsView: View {
             return
         }
 
-        // Split by comma and process each topic
-        let topicList = input.split(separator: ",").map {
-            $0.trimmingCharacters(in: .whitespacesAndNewlines)
+        // Determine separator: if contains comma, use comma; otherwise use space
+        let topicList: [String]
+        if input.contains(",") {
+            // Comma-separated (e.g., "topic1,topic2" or "topic1, topic2")
+            topicList = input.split(separator: ",").map {
+                $0.trimmingCharacters(in: .whitespacesAndNewlines)
+            }
+        } else if input.contains(" ") {
+            // Space-separated (e.g., "topic1 topic2 topic3")
+            topicList = input.split(separator: " ").map {
+                String($0).trimmingCharacters(in: .whitespacesAndNewlines)
+            }.filter { !$0.isEmpty }
+        } else {
+            // Single topic
+            topicList = [input]
         }
 
         var addedTopics: [String] = []
@@ -391,6 +562,11 @@ struct SettingsView: View {
         maxRecentMessages = settings.maxRecentMessages
         autoConnect = settings.autoConnect
         appearanceMode = settings.appearanceMode
+        notificationSound = settings.notificationSound
+        customSoundForHighPriority = settings.customSoundForHighPriority
+        fallbackServers = settings.fallbackServers
+        enableFallbackServers = settings.enableFallbackServers
+        fallbackRetryDelay = settings.fallbackRetryDelay
 
         if !username.isEmpty {
             password = SettingsManager.loadPassword(for: username) ?? ""
@@ -407,9 +583,14 @@ struct SettingsView: View {
             enableNotifications: enableNotifications,
             maxRecentMessages: maxRecentMessages,
             autoConnect: autoConnect,
-            appearanceMode: appearanceMode
+            appearanceMode: appearanceMode,
+            notificationSound: notificationSound,
+            customSoundForHighPriority: customSoundForHighPriority,
+            enableFallbackServers: enableFallbackServers,
+            fallbackRetryDelay: fallbackRetryDelay
         )
         settings.topics = topics
+        settings.fallbackServers = fallbackServers
 
         SettingsManager.saveSettings(settings)
 
@@ -435,9 +616,222 @@ struct SettingsView: View {
         themeManager.setTheme(appearanceMode)
         dismiss()
     }
+
+    private func testNotificationSound() {
+        let content = UNMutableNotificationContent()
+        content.title = "ntfy Sound Test"
+        content.body = "Testing notification sound: \(notificationSound.displayName)"
+
+        // Use the selected sound
+        if let soundFileName = notificationSound.fileName {
+            content.sound = UNNotificationSound(named: UNNotificationSoundName(soundFileName))
+        } else {
+            content.sound = .default
+        }
+
+        let request = UNNotificationRequest(
+            identifier: "sound_test",
+            content: content,
+            trigger: nil
+        )
+
+        UNUserNotificationCenter.current().add(request) { error in
+            if let error = error {
+                print("❌ Failed to test sound: \(error)")
+            } else {
+                print("🔊 Testing sound: \(notificationSound.displayName)")
+            }
+        }
+    }
 }
 
 
+
+struct ServerEditorView: View {
+    @Binding var server: NtfyServer?
+    @Binding var isPresented: Bool
+    let onSave: (NtfyServer?) -> Void
+
+    @State private var url: String = ""
+    @State private var name: String = ""
+    @State private var authMethod: AuthenticationMethod = .basicAuth
+    @State private var username: String = ""
+    @State private var password: String = ""
+    @State private var accessToken: String = ""
+
+    var body: some View {
+        VStack(spacing: 24) {
+            // Header
+            HStack {
+                Text(server?.url.isEmpty == false ? "Edit server" : "Add server")
+                    .font(.title2)
+                    .fontWeight(.semibold)
+                Spacer()
+            }
+            .padding(.top, 4)
+
+            // Content
+            VStack(alignment: .leading, spacing: 20) {
+                // Server details section
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("Server details")
+                        .font(.subheadline)
+                        .fontWeight(.medium)
+
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Server URL")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        TextField("https://ntfy.sh", text: $url)
+                            .textFieldStyle(.roundedBorder)
+                        Text("e.g., https://ntfy.sh or https://ntfy.example.com")
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
+                    }
+
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Display name (optional)")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        TextField("My server", text: $name)
+                            .textFieldStyle(.roundedBorder)
+                        Text("Custom name for this server")
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
+                    }
+                }
+
+                Divider()
+
+                // Authentication section
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("Authentication")
+                        .font(.subheadline)
+                        .fontWeight(.medium)
+
+                    Picker("", selection: $authMethod) {
+                        ForEach(AuthenticationMethod.allCases, id: \.self) { method in
+                            Text(method.displayName).tag(method)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+
+                    if authMethod == .basicAuth {
+                        VStack(alignment: .leading, spacing: 12) {
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text("Username")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                                TextField("username", text: $username)
+                                    .textFieldStyle(.roundedBorder)
+                            }
+
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text("Password")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                                SecureField("password", text: $password)
+                                    .textFieldStyle(.roundedBorder)
+                            }
+
+                            Text("Leave empty for public servers")
+                                .font(.caption2)
+                                .foregroundColor(.secondary)
+                        }
+                    } else {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Access token")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                            SecureField("tk_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", text: $accessToken)
+                                .textFieldStyle(.roundedBorder)
+                            Text("32-character token starting with 'tk_'")
+                                .font(.caption2)
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                }
+            }
+
+            Spacer()
+
+            // Footer
+            HStack {
+                Button("Cancel") {
+                    isPresented = false
+                }
+                .buttonStyle(.bordered)
+
+                Spacer()
+
+                Button("Save") {
+                    saveServer()
+                }
+                .buttonStyle(.borderedProminent)
+                .disabled(url.isEmpty)
+            }
+            .padding(.bottom, 4)
+        }
+        .padding(24)
+        .frame(width: 480, height: 580)
+        .background(Color(NSColor.controlBackgroundColor))
+        .cornerRadius(12)
+        .onAppear {
+            loadServerData()
+        }
+    }
+
+    private func loadServerData() {
+        guard let server = server else { return }
+        url = server.url
+        name = server.name
+        authMethod = server.authMethod
+        username = server.username
+
+        // Load credentials
+        if !username.isEmpty {
+            password = SettingsManager.loadPassword(for: username) ?? ""
+        }
+        accessToken = SettingsManager.loadAccessToken() ?? ""
+    }
+
+    private func saveServer() {
+        guard var serverToSave = server else {
+            // Create new server
+            let newServer = NtfyServer(
+                url: url,
+                name: name,
+                authMethod: authMethod,
+                username: username,
+                isEnabled: true
+            )
+            onSave(newServer)
+            isPresented = false
+            return
+        }
+
+        // Update existing server
+        serverToSave.url = url
+        serverToSave.name = name
+        serverToSave.authMethod = authMethod
+        serverToSave.username = username
+
+        // Save credentials
+        switch authMethod {
+        case .basicAuth:
+            if !password.isEmpty && !username.isEmpty {
+                SettingsManager.savePassword(password, for: username)
+            }
+        case .accessToken:
+            if !accessToken.isEmpty {
+                SettingsManager.saveAccessToken(accessToken)
+            }
+        }
+
+        onSave(serverToSave)
+        isPresented = false
+    }
+}
 
 extension View {
     func placeholder<Content: View>(

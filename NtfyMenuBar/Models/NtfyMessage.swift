@@ -16,6 +16,11 @@ struct NtfyMessage: Codable, Identifiable, Equatable {
     let title: String?
     let priority: Int?
     let tags: [String]?
+
+    // Unique identifier for SwiftUI ForEach - combines original ID with timestamp
+    var uniqueId: String {
+        return "\(id)-\(time)-\(topic)"
+    }
     
     var date: Date {
         Date(timeIntervalSince1970: TimeInterval(time))
@@ -50,7 +55,7 @@ enum AuthenticationMethod: String, Codable, CaseIterable {
         case .basicAuth:
             return "Username & Password"
         case .accessToken:
-            return "Access Token"
+            return "Access token"
         }
     }
 }
@@ -59,7 +64,7 @@ enum AppearanceMode: String, Codable, CaseIterable {
     case light = "light"
     case dark = "dark"
     case system = "system"
-    
+
     var displayName: String {
         switch self {
         case .light:
@@ -72,8 +77,87 @@ enum AppearanceMode: String, Codable, CaseIterable {
     }
 }
 
+enum NotificationSound: String, Codable, CaseIterable {
+    case `default` = "default"
+    case basso = "Basso"
+    case blow = "Blow"
+    case bottle = "Bottle"
+    case frog = "Frog"
+    case funk = "Funk"
+    case glass = "Glass"
+    case hero = "Hero"
+    case morse = "Morse"
+    case ping = "Ping"
+    case pop = "Pop"
+    case purr = "Purr"
+    case sosumi = "Sosumi"
+    case submarine = "Submarine"
+    case tink = "Tink"
+
+    var displayName: String {
+        switch self {
+        case .default:
+            return "Default"
+        default:
+            return rawValue
+        }
+    }
+
+    var fileName: String? {
+        switch self {
+        case .default:
+            return nil // Uses system default
+        default:
+            return rawValue
+        }
+    }
+}
+
+struct NtfyServer: Codable, Equatable, Identifiable {
+    var id = UUID()
+    var url: String = ""
+    var name: String = ""
+    var authMethod: AuthenticationMethod = .basicAuth
+    var username: String = ""
+    var isEnabled: Bool = true
+
+    var displayName: String {
+        return name.isEmpty ? cleanURL : name
+    }
+
+    var cleanURL: String {
+        var serverURL = url
+
+        // Remove protocol prefix for cleaner display
+        if serverURL.hasPrefix("https://") {
+            serverURL = String(serverURL.dropFirst(8))
+        } else if serverURL.hasPrefix("http://") {
+            serverURL = String(serverURL.dropFirst(7))
+        }
+
+        // Remove trailing slashes
+        while serverURL.hasSuffix("/") {
+            serverURL = String(serverURL.dropLast())
+        }
+
+        return serverURL.isEmpty ? "Not configured" : serverURL
+    }
+
+    var isConfigured: Bool {
+        guard !url.isEmpty else { return false }
+
+        switch authMethod {
+        case .basicAuth:
+            return !username.isEmpty || url.contains("ntfy.sh") // Public servers don't need auth
+        case .accessToken:
+            return true // Token validation happens in Keychain retrieval
+        }
+    }
+}
+
 struct NtfySettings: Codable, Equatable {
     var serverURL: String = ""
+    var fallbackServers: [NtfyServer] = []
     var topics: [String] = []
     var authMethod: AuthenticationMethod = .basicAuth
     var username: String = ""
@@ -81,6 +165,10 @@ struct NtfySettings: Codable, Equatable {
     var maxRecentMessages: Int = 20
     var autoConnect: Bool = true
     var appearanceMode: AppearanceMode = .system
+    var notificationSound: NotificationSound = .default
+    var customSoundForHighPriority: Bool = true
+    var enableFallbackServers: Bool = false
+    var fallbackRetryDelay: Double = 30.0 // seconds
 
     // Legacy single topic support for migration
     var topic: String {
@@ -92,13 +180,33 @@ struct NtfySettings: Codable, Equatable {
         }
     }
 
+    // Get primary server as NtfyServer object
+    var primaryServer: NtfyServer {
+        return NtfyServer(
+            url: serverURL,
+            name: "Primary server",
+            authMethod: authMethod,
+            username: username,
+            isEnabled: true
+        )
+    }
+
+    // Get all configured servers (primary + enabled fallbacks)
+    var allServers: [NtfyServer] {
+        var servers = [primaryServer]
+        if enableFallbackServers {
+            servers.append(contentsOf: fallbackServers.filter { $0.isEnabled && $0.isConfigured })
+        }
+        return servers
+    }
+
     // Password and token stored separately in Keychain for security
     var isConfigured: Bool {
         guard !serverURL.isEmpty && !topics.isEmpty else { return false }
 
         switch authMethod {
         case .basicAuth:
-            return !username.isEmpty
+            return !username.isEmpty || serverURL.contains("ntfy.sh") // Public servers don't need auth
         case .accessToken:
             return true // Token validation happens in Keychain retrieval
         }

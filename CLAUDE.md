@@ -105,6 +105,11 @@ The project follows a structured approach with clear separation of concerns:
 - **Multi-Desktop Support**: Windows now appear on current desktop, not launch desktop
 - **User Management Removal**: Removed user management feature - ntfy only supports CLI-based user management, no HTTP API available
 - **Multiple Topics Support**: Full support for subscribing to multiple topics simultaneously with topic badges in message display
+- **Network Monitoring**: Comprehensive network change detection with automatic reconnection on network restoration
+- **Message Filtering**: Real-time search and filtering by text, priority, and topic with keyboard shortcuts
+- **Fallback Servers**: Automatic failover to backup servers with configurable retry delays
+- **UI Text Standardization**: Converted all interface text from Title Case to sentence case following modern UI guidelines
+- **Interface Cleanup**: Removed redundant text elements for cleaner, more professional appearance
 
 ### Technical Implementation Details
 - **Window Positioning**: Uses `visibleFrame.maxY - windowHeight` for placement below menu bar
