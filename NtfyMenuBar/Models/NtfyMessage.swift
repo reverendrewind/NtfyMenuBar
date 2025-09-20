@@ -72,7 +72,7 @@ enum AppearanceMode: String, Codable, CaseIterable {
     }
 }
 
-struct NtfySettings: Codable {
+struct NtfySettings: Codable, Equatable {
     var serverURL: String = ""
     var topic: String = ""
     var authMethod: AuthenticationMethod = .basicAuth

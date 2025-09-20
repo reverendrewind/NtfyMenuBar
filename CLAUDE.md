@@ -10,10 +10,10 @@ NtfyMenuBar is a native macOS menu bar application for receiving ntfy.sh notific
 
 - **Main App**: `NtfyMenuBar/NtfyMenuBarApp.swift` - SwiftUI app with AppDelegate for status bar control
 - **Status Bar**: `StatusBarController.swift` - NSStatusItem management with centered dashboard positioning and overflow protection
-- **Models**: Data structures for NtfyMessage and NtfySettings with Codable support
-- **Services**: Server-Sent Events (SSE) via NtfyService using URLSession streaming
+- **Models**: Data structures for NtfyMessage, NtfySettings, and NtfyUser with Codable support
+- **Services**: Server-Sent Events (SSE) via NtfyService using URLSession streaming, UserManagementService for admin operations
 - **ViewModels**: Observable state management with NtfyViewModel using @MainActor and action closures for StatusBarController integration
-- **Views**: SwiftUI components including ContentView, SettingsView, and MessageRowView
+- **Views**: SwiftUI components including ContentView, SettingsView, MessageRowView, UserManagementView, and CreateUserSheet
 - **Utilities**: NotificationManager for rich macOS notifications, SettingsManager for Keychain storage, and ThemeManager for dark mode support
 - **Bundle ID**: `net.raczej.NtfyMenuBar`
 
@@ -38,6 +38,7 @@ NtfyMenuBar is a native macOS menu bar application for receiving ntfy.sh notific
 - Rich notifications with priority emojis and interactive actions
 - Dark mode support with Light/Dark/System appearance options
 - Integrated settings window management between dashboard and StatusBarController
+- Comprehensive user management with role-based permissions and admin features
 
 ## Build and Development Commands
 
@@ -102,6 +103,7 @@ The project follows a structured approach with clear separation of concerns:
 - **Enhanced Notifications**: Rich notifications with priority indicators and interactive actions
 - **Connection Stability**: Improved reconnection logic and keepalive timers
 - **Multi-Desktop Support**: Windows now appear on current desktop, not launch desktop
+- **User Management System**: Complete admin interface for managing ntfy server users with role-based permissions
 
 ### Technical Implementation Details
 - **Window Positioning**: Uses `visibleFrame.maxY - windowHeight` for placement below menu bar
@@ -110,6 +112,8 @@ The project follows a structured approach with clear separation of concerns:
 - **Keychain Storage**: Secure credential storage using Keychain Services API
 - **State Management**: @MainActor isolation with Combine publishers for reactive UI updates
 - **Notification Categories**: UNNotificationCategory with interactive actions (Open, Mark Read, Dismiss)
+- **Admin API Integration**: UserManagementService with complete CRUD operations for ntfy server administration
+- **Role-based Security**: User role validation with admin/user permission management
 
 ### Known Patterns
 - **Window Delegate**: Uses windowDidResignKey for click-outside-to-close behavior
