@@ -108,6 +108,9 @@ class StatusBarController: NSObject, ObservableObject, NSWindowDelegate {
             window.delegate = self
             window.isRestorable = false
             window.tabbingMode = .disallowed
+            // Make window appear on all spaces/desktops
+            window.collectionBehavior = [.moveToActiveSpace, .transient]
+            window.level = .floating
             window.makeKeyAndOrderFront(nil)
             
             // Keep reference to window
@@ -231,6 +234,9 @@ class StatusBarController: NSObject, ObservableObject, NSWindowDelegate {
             window.delegate = self
             window.isRestorable = false
             window.tabbingMode = .disallowed
+            // Make window appear on all spaces/desktops
+            window.collectionBehavior = [.moveToActiveSpace, .transient]
+            window.level = .floating
             window.makeKeyAndOrderFront(nil)
             
             // Keep reference to window
