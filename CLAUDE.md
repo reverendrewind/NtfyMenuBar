@@ -14,7 +14,7 @@ NtfyMenuBar is a native macOS menu bar application for receiving ntfy.sh notific
 - **Services**: Server-Sent Events (SSE) via NtfyService using URLSession streaming
 - **ViewModels**: Observable state management with NtfyViewModel using @MainActor and action closures for StatusBarController integration
 - **Views**: SwiftUI components including ContentView, SettingsView, and MessageRowView
-- **Utilities**: NotificationManager for rich macOS notifications and SettingsManager for Keychain storage
+- **Utilities**: NotificationManager for rich macOS notifications, SettingsManager for Keychain storage, and ThemeManager for dark mode support
 - **Bundle ID**: `net.raczej.NtfyMenuBar`
 
 ### Key Design Decisions
@@ -36,6 +36,7 @@ NtfyMenuBar is a native macOS menu bar application for receiving ntfy.sh notific
 - Click-outside-to-close and Escape key support
 - Auto-connect at launch option for seamless experience
 - Rich notifications with priority emojis and interactive actions
+- Dark mode support with Light/Dark/System appearance options
 - Integrated settings window management between dashboard and StatusBarController
 
 ## Build and Development Commands

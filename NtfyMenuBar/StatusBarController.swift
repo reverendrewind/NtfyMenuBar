@@ -19,11 +19,13 @@ class DashboardWindow: NSWindow {
 class StatusBarController: NSObject, ObservableObject, NSWindowDelegate {
     private var statusItem: NSStatusItem?
     let viewModel: NtfyViewModel
+    let themeManager: ThemeManager
     private var dashboardWindow: NSWindow?
     private var settingsWindow: NSWindow?
     
-    init(viewModel: NtfyViewModel) {
+    init(viewModel: NtfyViewModel, themeManager: ThemeManager) {
         self.viewModel = viewModel
+        self.themeManager = themeManager
         super.init()
         setupStatusItem()
         setupNotificationObservers()
@@ -32,6 +34,9 @@ class StatusBarController: NSObject, ObservableObject, NSWindowDelegate {
         viewModel.openSettingsAction = { [weak self] in
             self?.openSettings()
         }
+        
+        // Initialize theme from settings
+        themeManager.setTheme(viewModel.settings.appearanceMode)
     }
     
     private func setupStatusItem() {
@@ -122,7 +127,8 @@ class StatusBarController: NSObject, ObservableObject, NSWindowDelegate {
         )
         
         // Configure window appearance
-        window.backgroundColor = NSColor.controlBackgroundColor
+        window.backgroundColor = themeManager.isDarkMode ? NSColor.windowBackgroundColor : NSColor.controlBackgroundColor
+        window.appearance = themeManager.isDarkMode ? NSAppearance(named: .darkAqua) : NSAppearance(named: .aqua)
         window.isOpaque = true  // Changed to true for better rendering
         window.hasShadow = true
         window.level = .popUpMenu // Same level as menu bar menus
@@ -130,7 +136,9 @@ class StatusBarController: NSObject, ObservableObject, NSWindowDelegate {
         window.collectionBehavior = [.moveToActiveSpace, .stationary]
         
         // Add content
-        let contentView = ContentView().environmentObject(viewModel)
+        let contentView = ContentView()
+            .environmentObject(viewModel)
+            .environmentObject(themeManager)
         let hostingController = NSHostingController(rootView: contentView)
         window.contentViewController = hostingController
         window.delegate = self
@@ -234,7 +242,7 @@ class StatusBarController: NSObject, ObservableObject, NSWindowDelegate {
             // Calculate position below menu bar (centered)
             guard let screen = NSScreen.main else { return }
             let screenFrame = screen.frame
-            let windowSize = CGSize(width: 500, height: 550)
+            let windowSize = CGSize(width: 500, height: 600)
             
             // Calculate X position (centered)
             let initialX = (screenFrame.width - windowSize.width) / 2
@@ -246,7 +254,9 @@ class StatusBarController: NSObject, ObservableObject, NSWindowDelegate {
             let initialY = screenFrame.maxY - menuBarHeight - windowSize.height - gap
             
             // Create new settings window with correct initial position
-            let settingsView = SettingsView().environmentObject(viewModel)
+            let settingsView = SettingsView()
+                .environmentObject(viewModel)
+                .environmentObject(themeManager)
             let hostingController = NSHostingController(rootView: settingsView)
             
             let window = NSWindow(

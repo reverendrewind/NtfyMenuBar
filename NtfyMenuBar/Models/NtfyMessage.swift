@@ -55,6 +55,23 @@ enum AuthenticationMethod: String, Codable, CaseIterable {
     }
 }
 
+enum AppearanceMode: String, Codable, CaseIterable {
+    case light = "light"
+    case dark = "dark"
+    case system = "system"
+    
+    var displayName: String {
+        switch self {
+        case .light:
+            return "Light"
+        case .dark:
+            return "Dark"
+        case .system:
+            return "System"
+        }
+    }
+}
+
 struct NtfySettings: Codable {
     var serverURL: String = ""
     var topic: String = ""
@@ -63,6 +80,7 @@ struct NtfySettings: Codable {
     var enableNotifications: Bool = true
     var maxRecentMessages: Int = 20
     var autoConnect: Bool = true
+    var appearanceMode: AppearanceMode = .system
     
     // Password and token stored separately in Keychain for security
     var isConfigured: Bool {

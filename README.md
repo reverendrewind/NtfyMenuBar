@@ -19,7 +19,8 @@ A native macOS menu bar application for [ntfy](https://ntfy.sh) notifications. G
 - **Enhanced Notifications**: Rich, branded notifications with priority indicators and interactive actions
 - **Multi-Desktop Support**: Dashboard appears on current desktop/space, not locked to launch desktop
 - **Custom App Icons**: Generated from SVG with proper menu bar template rendering
-- **Customizable Settings**: Configure notification preferences, message limits, and auto-connect
+- **Dark Mode Support**: Configurable appearance with Light, Dark, and System options
+- **Customizable Settings**: Configure notification preferences, message limits, appearance, and auto-connect
 - **Connection Stability**: Improved SSE handling with auto-reconnect and keepalive timers
 - **Sandbox Compatible**: Full App Sandbox support with proper network entitlements
 
@@ -41,6 +42,7 @@ A native macOS menu bar application for [ntfy](https://ntfy.sh) notifications. G
 - Server configuration (URL and topic) with validation
 - Authentication method selection (Basic Auth or Access Token)
 - Secure credential management via macOS Keychain
+- Appearance mode selection (Light, Dark, System)
 - Notification preferences and auto-connect toggle
 - Recent messages limit configuration (5-100 messages)
 
@@ -81,6 +83,7 @@ A native macOS menu bar application for [ntfy](https://ntfy.sh) notifications. G
    - **Access Token**: 32-character token starting with `tk_` (for ntfy.sh Pro or self-hosted with auth)
 
 5. **Set Preferences**:
+   - Choose appearance mode (Light, Dark, or System)
    - Enable/disable system notifications
    - Toggle auto-connect at launch
    - Configure maximum recent messages (5-100)

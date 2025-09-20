@@ -9,6 +9,7 @@ import SwiftUI
 
 class AppDelegate: NSObject, NSApplicationDelegate {
     var statusBarController: StatusBarController?
+    var themeManager: ThemeManager?
     
     func applicationDidFinishLaunching(_ notification: Notification) {
         // Ensure app stays out of dock - force accessory policy
@@ -16,7 +17,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         
         // Initialize status bar controller here where we have proper app lifecycle
         let viewModel = NtfyViewModel()
-        statusBarController = StatusBarController(viewModel: viewModel)
+        let themeManager = ThemeManager()
+        self.themeManager = themeManager
+        statusBarController = StatusBarController(viewModel: viewModel, themeManager: themeManager)
         
         // Additional check - hide from dock completely
         if NSApplication.shared.activationPolicy() != .accessory {
@@ -38,12 +41,15 @@ struct NtfyMenuBarApp: App {
     
     var body: some Scene {
         Settings {
-            if let viewModel = appDelegate.statusBarController?.viewModel {
+            if let viewModel = appDelegate.statusBarController?.viewModel,
+               let themeManager = appDelegate.themeManager {
                 SettingsView()
                     .environmentObject(viewModel)
+                    .environmentObject(themeManager)
             } else {
                 SettingsView()
                     .environmentObject(NtfyViewModel())
+                    .environmentObject(ThemeManager())
             }
         }
     }

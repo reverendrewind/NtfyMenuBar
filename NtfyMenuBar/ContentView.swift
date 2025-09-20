@@ -9,6 +9,7 @@ import SwiftUI
 
 struct ContentView: View {
     @EnvironmentObject var viewModel: NtfyViewModel
+    @EnvironmentObject var themeManager: ThemeManager
     @Environment(\.dismiss) private var dismiss
     
     var body: some View {
@@ -29,7 +30,7 @@ struct ContentView: View {
         }
         .padding()
         .frame(width: 320, height: 300)
-        .background(Color(NSColor.controlBackgroundColor))
+        .background(Color.theme.windowBackground)
         .onExitCommand {
             // Close on Escape key
             if let window = NSApplication.shared.keyWindow {

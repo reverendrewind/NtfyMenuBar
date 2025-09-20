@@ -9,6 +9,7 @@ import SwiftUI
 
 struct SettingsView: View {
     @EnvironmentObject var viewModel: NtfyViewModel
+    @EnvironmentObject var themeManager: ThemeManager
     @Environment(\.dismiss) private var dismiss
     
     @State private var serverURL: String = ""
@@ -20,6 +21,7 @@ struct SettingsView: View {
     @State private var enableNotifications: Bool = true
     @State private var maxRecentMessages: Int = 20
     @State private var autoConnect: Bool = true
+    @State private var appearanceMode: AppearanceMode = .system
     
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
@@ -106,6 +108,19 @@ struct SettingsView: View {
                     Spacer()
                     Stepper("", value: $maxRecentMessages, in: 5...100, step: 5)
                 }
+                
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Appearance")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    
+                    Picker("Appearance", selection: $appearanceMode) {
+                        ForEach(AppearanceMode.allCases, id: \.self) { mode in
+                            Text(mode.displayName).tag(mode)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+                }
             }
             
             Spacer()
@@ -126,7 +141,8 @@ struct SettingsView: View {
             }
         }
         .padding(20)
-        .frame(width: 500, height: 550)
+        .frame(width: 500, height: 600)
+        .background(Color.theme.windowBackground)
         .onAppear {
             loadCurrentSettings()
         }
@@ -152,6 +168,7 @@ struct SettingsView: View {
         enableNotifications = settings.enableNotifications
         maxRecentMessages = settings.maxRecentMessages
         autoConnect = settings.autoConnect
+        appearanceMode = settings.appearanceMode
         
         if !username.isEmpty {
             password = SettingsManager.loadPassword(for: username) ?? ""
@@ -168,7 +185,8 @@ struct SettingsView: View {
             username: username,
             enableNotifications: enableNotifications,
             maxRecentMessages: maxRecentMessages,
-            autoConnect: autoConnect
+            autoConnect: autoConnect,
+            appearanceMode: appearanceMode
         )
         
         SettingsManager.saveSettings(settings)
@@ -192,6 +210,7 @@ struct SettingsView: View {
         }
         
         viewModel.updateSettings(settings)
+        themeManager.setTheme(appearanceMode)
         dismiss()
     }
 }
