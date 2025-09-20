@@ -121,14 +121,9 @@ class StatusBarController: NSObject, ObservableObject, NSWindowDelegate {
         window.isReleasedWhenClosed = false
         window.collectionBehavior = [.moveToActiveSpace, .stationary]
         
-        // Add content with explicit sizing
-        let contentView = ContentView()
-            .environmentObject(viewModel)
-            .frame(width: size.width, height: size.height)  // Force size
+        // Add content
+        let contentView = ContentView().environmentObject(viewModel)
         let hostingController = NSHostingController(rootView: contentView)
-        
-        // Ensure the hosting controller respects the window size
-        hostingController.view.frame = NSRect(x: 0, y: 0, width: size.width, height: size.height)
         window.contentViewController = hostingController
         window.delegate = self
         

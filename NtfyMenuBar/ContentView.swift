@@ -29,9 +29,8 @@ struct ContentView: View {
             footerView
         }
         .padding()
-        .frame(width: 280)
-        .fixedSize()
-        .background(Color(NSColor.windowBackgroundColor))
+        .frame(width: 350, height: 500)
+        .background(Color(NSColor.controlBackgroundColor))
         .onExitCommand {
             // Close on Escape key
             if let window = NSApplication.shared.keyWindow {
