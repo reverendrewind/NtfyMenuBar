@@ -83,21 +83,30 @@ class StatusBarController: NSObject, ObservableObject, NSWindowDelegate {
             var initialX: CGFloat = 0
             var initialY: CGFloat = 0
             
-            // Simple positioning at top of screen
-            guard let screen = NSScreen.main else { return }
-            let screenFrame = screen.frame
-            
-            // Position window at right side of screen
-            initialX = screenFrame.maxX - windowSize.width - 20
-            
-            // Position just below menu bar at TOP of screen
-            // screenFrame.maxY is the top of the screen
-            // Subtract menu bar height (25) and window height
-            initialY = screenFrame.maxY - 25 - windowSize.height - 5
-            
-            print("📍 Screen frame: \(screenFrame)")
-            print("📍 Window will be at: x=\(initialX), y=\(initialY)")
-            print("📍 Top of screen (maxY): \(screenFrame.maxY)")
+            // Get position relative to status item button (Stack Overflow solution)
+            if let button = statusItem?.button {
+                // Convert button's bounds to screen coordinates
+                let rectInWindow = button.convert(button.bounds, to: nil)
+                let screenRect = button.window?.convertToScreen(rectInWindow) ?? CGRect.zero
+                
+                print("📍 Button screen rect: \(screenRect)")
+                
+                // Position window below the status item
+                // Center it under the button, or align to right edge
+                initialX = screenRect.origin.x + screenRect.width - windowSize.width
+                
+                // Position below the button - screenRect.origin.y is bottom of button
+                initialY = screenRect.origin.y - windowSize.height - 2
+                
+                print("📍 Calculated position: x=\(initialX), y=\(initialY)")
+            } else {
+                // Fallback if button unavailable
+                guard let screen = NSScreen.main else { return }
+                let screenFrame = screen.frame
+                initialX = screenFrame.maxX - windowSize.width - 20
+                initialY = screenFrame.maxY - 30 - windowSize.height
+                print("📍 Using fallback positioning")
+            }
             
             // Create new window with correct initial position
             let contentView = ContentView().environmentObject(viewModel)
