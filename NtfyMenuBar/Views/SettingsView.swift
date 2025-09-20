@@ -149,19 +149,19 @@ struct SettingsView: View {
                         // Compact add topic field
                         VStack(alignment: .leading, spacing: 4) {
                             HStack(spacing: 6) {
-                                TextField("Add topic (e.g., my-alerts)", text: $newTopic)
+                                TextField("Add topics (comma-separated)", text: $newTopic)
                                     .textFieldStyle(.roundedBorder)
-                                    .frame(maxWidth: 180)
+                                    .frame(maxWidth: 200)
                                     .onSubmit {
                                         addTopic()
                                     }
                                     .onChange(of: newTopic) { _ in
                                         // Clear error when user types
-                                        if !topicValidationError.isEmpty {
+                                        if !topicValidationError.isEmpty && !topicValidationError.contains("Added") {
                                             topicValidationError = ""
                                         }
-                                        // Auto-lowercase and remove spaces
-                                        newTopic = newTopic.lowercased().replacingOccurrences(of: " ", with: "-")
+                                        // Auto-lowercase but preserve commas and spaces around them
+                                        newTopic = newTopic.lowercased()
                                     }
 
                                 Button(action: addTopic) {
@@ -175,18 +175,18 @@ struct SettingsView: View {
                             // Validation error or help text
                             if !topicValidationError.isEmpty {
                                 HStack(spacing: 3) {
-                                    Image(systemName: "exclamationmark.triangle.fill")
+                                    Image(systemName: topicValidationError.contains("Added") ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
                                         .font(.system(size: 10))
                                     Text(topicValidationError)
                                         .font(.caption2)
                                 }
-                                .foregroundColor(.red)
+                                .foregroundColor(topicValidationError.contains("Added") ? .green : .red)
                             } else if topics.isEmpty {
-                                Text("Add at least one topic (letters, numbers, hyphens only)")
+                                Text("Example: alerts, news or alerts,news,updates")
                                     .font(.caption2)
                                     .foregroundColor(.secondary)
                             } else {
-                                Text("Topics: letters, numbers, hyphens, underscores")
+                                Text("Tip: Add multiple topics with commas (e.g., topic1,topic2)")
                                     .font(.caption2)
                                     .foregroundColor(.secondary)
                             }
@@ -290,42 +290,80 @@ struct SettingsView: View {
     }
 
     private func addTopic() {
-        let trimmedTopic = newTopic.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        let input = newTopic.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
 
         // Clear any previous error
         topicValidationError = ""
 
         // Check if empty
-        guard !trimmedTopic.isEmpty else {
+        guard !input.isEmpty else {
             topicValidationError = "Topic cannot be empty"
             return
         }
 
-        // Validate topic name format (letters, numbers, hyphens, underscores only)
+        // Split by comma and process each topic
+        let topicList = input.split(separator: ",").map {
+            $0.trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+
+        var addedTopics: [String] = []
+        var invalidTopics: [String] = []
+        var duplicateTopics: [String] = []
+
         let validPattern = "^[a-z0-9_-]+$"
         let regex = try? NSRegularExpression(pattern: validPattern)
-        let range = NSRange(location: 0, length: trimmedTopic.utf16.count)
 
-        guard regex?.firstMatch(in: trimmedTopic, options: [], range: range) != nil else {
-            topicValidationError = "Only letters, numbers, hyphens and underscores allowed"
-            return
+        for topicName in topicList {
+            // Skip empty entries (from extra commas)
+            guard !topicName.isEmpty else { continue }
+
+            // Check length
+            guard topicName.count <= 64 else {
+                invalidTopics.append("\(topicName) (too long)")
+                continue
+            }
+
+            // Validate format
+            let range = NSRange(location: 0, length: topicName.utf16.count)
+            guard regex?.firstMatch(in: topicName, options: [], range: range) != nil else {
+                invalidTopics.append(topicName)
+                continue
+            }
+
+            // Check for duplicates
+            if topics.contains(topicName) {
+                duplicateTopics.append(topicName)
+                continue
+            }
+
+            topics.append(topicName)
+            addedTopics.append(topicName)
         }
 
-        // Check for duplicates
-        guard !topics.contains(trimmedTopic) else {
-            topicValidationError = "Topic already added"
-            return
+        // Provide feedback
+        if !invalidTopics.isEmpty {
+            topicValidationError = "Invalid: \(invalidTopics.joined(separator: ", "))"
+        } else if !duplicateTopics.isEmpty && addedTopics.isEmpty {
+            topicValidationError = "Already added: \(duplicateTopics.joined(separator: ", "))"
+        } else if !addedTopics.isEmpty {
+            // Successfully added some topics
+            newTopic = ""
+            topicValidationError = ""
+
+            // Show brief success feedback if some were skipped
+            if !duplicateTopics.isEmpty {
+                topicValidationError = "Added \(addedTopics.count) topic(s), skipped duplicates"
+                // Clear this message after a delay
+                DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                    self.topicValidationError = ""
+                }
+            }
         }
 
-        // Check length (ntfy has limits)
-        guard trimmedTopic.count <= 64 else {
-            topicValidationError = "Topic name too long (max 64 characters)"
-            return
+        // Clear input only if something was successfully added
+        if !addedTopics.isEmpty {
+            newTopic = ""
         }
-
-        topics.append(trimmedTopic)
-        newTopic = ""
-        topicValidationError = ""
     }
 
     private func loadCurrentSettings() {
