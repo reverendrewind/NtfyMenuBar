@@ -19,7 +19,7 @@ class DashboardWindow: NSWindow {
 class StatusBarController: NSObject, ObservableObject, NSWindowDelegate {
     private var statusItem: NSStatusItem?
     let viewModel: NtfyViewModel
-    private var dashboardPopover: NSPopover?
+    private var dashboardWindow: NSWindow?
     private var settingsWindow: NSWindow?
     
     init(viewModel: NtfyViewModel) {
@@ -73,28 +73,47 @@ class StatusBarController: NSObject, ObservableObject, NSWindowDelegate {
     }
     
     private func openDashboard() {
-        if let popover = dashboardPopover, popover.isShown {
-            // Popover is shown, close it (toggle behavior)
-            popover.close()
+        if let window = dashboardWindow, window.isVisible {
+            // Window exists and is visible, close it (toggle behavior)
+            window.close()
         } else {
-            // Create popover if it doesn't exist
-            if dashboardPopover == nil {
-                let popover = NSPopover()
-                popover.contentSize = NSSize(width: 350, height: 500)
-                popover.behavior = .transient // Close when clicking outside
-                popover.appearance = NSAppearance(named: .aqua)
-                
-                let contentView = ContentView().environmentObject(viewModel)
-                let hostingController = NSHostingController(rootView: contentView)
-                popover.contentViewController = hostingController
-                
-                dashboardPopover = popover
-            }
+            guard let button = statusItem?.button else { return }
             
-            // Show popover relative to status item button
-            if let button = statusItem?.button {
-                dashboardPopover?.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
-            }
+            let windowSize = CGSize(width: 350, height: 500)
+            
+            // Get the menu bar position
+            let buttonFrame = button.frame
+            let buttonWindow = button.window!
+            let buttonScreenRect = buttonWindow.convertToScreen(buttonFrame)
+            
+            // Position window directly below menu bar, aligned with button
+            let windowX = buttonScreenRect.maxX - windowSize.width
+            let windowY = buttonScreenRect.minY - windowSize.height
+            
+            // Create borderless window positioned below menu bar
+            let window = DashboardWindow(
+                contentRect: NSRect(x: windowX, y: windowY, width: windowSize.width, height: windowSize.height),
+                styleMask: [.borderless],
+                backing: .buffered,
+                defer: false
+            )
+            
+            // Configure window appearance
+            window.backgroundColor = NSColor.controlBackgroundColor
+            window.isOpaque = false
+            window.hasShadow = true
+            window.level = .popUpMenu // Same level as menu bar menus
+            window.isReleasedWhenClosed = false
+            window.collectionBehavior = [.moveToActiveSpace, .stationary]
+            
+            // Add content
+            let contentView = ContentView().environmentObject(viewModel)
+            let hostingController = NSHostingController(rootView: contentView)
+            window.contentViewController = hostingController
+            window.delegate = self
+            
+            window.makeKeyAndOrderFront(nil)
+            dashboardWindow = window
         }
     }
     
@@ -335,16 +354,21 @@ class StatusBarController: NSObject, ObservableObject, NSWindowDelegate {
         if let window = notification.object as? NSWindow {
             window.delegate = nil
             
-            // Only handle settings window now - dashboard is a popover
-            if window === settingsWindow {
+            // Determine which window is closing and clear the reference
+            if window === dashboardWindow {
+                dashboardWindow = nil
+            } else if window === settingsWindow {
                 settingsWindow = nil
             }
         }
     }
     
     func windowDidResignKey(_ notification: Notification) {
-        // Only handle settings window now, popover handles itself
-        // Popover automatically closes when clicking outside due to .transient behavior
+        // Close dashboard when it loses focus (click outside)
+        if let window = notification.object as? NSWindow,
+           window === dashboardWindow {
+            window.close()
+        }
     }
     
     deinit {
