@@ -282,17 +282,155 @@ NtfyMenuBar/
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## Acknowledgments
+## Proxmox VE Integration
 
-- [ntfy](https://ntfy.sh) - Simple pub-sub notification service
-- [Binwiederhier](https://github.com/binwiederhier) - Creator of ntfy
-- Apple's SwiftUI and Combine frameworks
+NtfyMenuBar provides excellent integration with Proxmox VE's webhook notification system, allowing you to receive server alerts, backup notifications, and system updates directly in your macOS menu bar.
+
+### Quick Setup
+
+1. **Configure your ntfy topic** in NtfyMenuBar (e.g., `proxmox-alerts`)
+2. **Create a webhook target** in Proxmox VE
+3. **Map notification severities** to ntfy priorities for visual indicators
+
+### Basic Webhook Configuration
+
+In Proxmox VE, create a webhook notification target with:
+
+```
+URL: https://your-ntfy-server.com/your-topic
+Method: POST
+Headers:
+  Title: [Proxmox] {{ title }}
+  Priority: {{ #if (eq severity "critical") }}5{{ else }}{{ #if (eq severity "warning") }}4{{ else }}3{{ /if }}{{ /if }}
+  Tags: proxmox,server
+Body: {{ message }}
+```
+
+### Advanced Configuration with Severity Mapping
+
+For rich notifications with proper priority indicators:
+
+```
+URL: https://your-ntfy-server.com/your-topic
+Method: POST
+Headers:
+  Title: [{{ secrets.server-name }}] {{ title }}
+  Priority: {{ lookup (json '{"critical":5,"error":5,"warning":4,"info":3,"notice":2}') severity }}
+  Tags: proxmox,{{ secrets.server-name }},{{ secrets.environment }}
+Body: {{ message }}\n\n📍 Server: {{ secrets.server-name }}\n🕐 Time: {{ timestamp }}
+```
+
+### Severity to Priority Mapping
+
+| Proxmox Severity | ntfy Priority | Visual Indicator | Sound |
+|------------------|---------------|------------------|-------|
+| `critical`       | 5             | 🔴 Critical      | Critical |
+| `error`          | 5             | 🔴 Critical      | Critical |
+| `warning`        | 4             | 🟠 High          | Critical |
+| `info`           | 3             | 🟡 Default       | Standard |
+| `notice`         | 2             | 🔵 Low           | Standard |
+
+### Common Use Cases
+
+**Backup Notifications:**
+```
+Headers:
+  Title: [{{ secrets.server-name }}] Backup {{ #if (eq severity "info") }}Complete{{ else }}Failed{{ /if }}
+  Priority: {{ #if (eq severity "info") }}2{{ else }}5{{ /if }}
+  Tags: proxmox,backup,{{ secrets.server-name }}
+```
+
+**Replication Alerts:**
+```
+Headers:
+  Title: [{{ secrets.server-name }}] Replication Alert
+  Priority: 4
+  Tags: proxmox,replication,{{ secrets.server-name }}
+```
+
+**System Alerts:**
+```
+Headers:
+  Title: [{{ secrets.server-name }}] System Alert
+  Priority: 5
+  Tags: proxmox,system,urgent,{{ secrets.server-name }}
+```
+
+### Authentication Setup
+
+For secure ntfy servers, configure authentication in Proxmox secrets:
+
+**Basic Auth:**
+```
+Secrets:
+  username: your-ntfy-username
+  password: your-ntfy-password
+
+Headers:
+  Authorization: Basic {{ base64 (concat secrets.username ":" secrets.password) }}
+```
+
+**Access Token:**
+```
+Secrets:
+  token: tk_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+Headers:
+  Authorization: Bearer {{ secrets.token }}
+```
+
+### Multi-Server Configuration
+
+For multiple Proxmox servers, use server-specific topics or tags:
+
+```
+URL: https://your-ntfy-server.com/proxmox-{{ secrets.server-name }}
+# OR
+Tags: proxmox,{{ secrets.server-name }},{{ secrets.datacenter }}
+```
+
+### Testing Your Configuration
+
+Test your webhook with a simple curl command:
+
+```bash
+curl -X POST https://your-ntfy-server.com/your-topic \
+  -H "Title: [Test] Proxmox Integration Test" \
+  -H "Priority: 3" \
+  -H "Tags: proxmox,test" \
+  -d "This is a test notification from Proxmox VE webhook integration"
+```
+
+### Troubleshooting
+
+**Notifications not appearing:**
+- Verify ntfy server URL and topic configuration
+- Check Proxmox VE webhook target test results
+- Ensure authentication credentials are correct
+- Verify network connectivity from Proxmox to ntfy server
+
+**Wrong priority indicators:**
+- Check severity mapping in webhook configuration
+- Verify Handlebars templating syntax
+- Test with manual curl commands using different priorities
+
+**Missing server context:**
+- Ensure secrets are properly configured in Proxmox
+- Verify templating variables in webhook body/headers
+- Check for proper escaping of special characters
 
 ## Support
 
 - **Issues**: [GitHub Issues](https://github.com/reverendrewind/NtfyMenuBar/issues)
 - **Discussions**: [GitHub Discussions](https://github.com/reverendrewind/NtfyMenuBar/discussions)
 - **ntfy Documentation**: [ntfy.sh/docs](https://ntfy.sh/docs)
+- **Proxmox VE Notifications**: [PVE Docs](https://pve.proxmox.com/pve-docs/chapter-notifications.html)
+
+## Acknowledgments
+
+- [ntfy](https://ntfy.sh) - Simple pub-sub notification service
+- [Binwiederhier](https://github.com/binwiederhier) - Creator of ntfy
+- Apple's SwiftUI and Combine frameworks
 
 ---
 
