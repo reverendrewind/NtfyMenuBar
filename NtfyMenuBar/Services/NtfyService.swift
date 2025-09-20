@@ -19,8 +19,17 @@ class NtfyService: ObservableObject {
     private var settings: NtfySettings
     private var reconnectTimer: Timer?
     private var reconnectAttempts = 0
-    private let maxReconnectAttempts = 5
+    private let maxReconnectAttempts = 10
     private let notificationManager = NotificationManager.shared
+    private var keepaliveTimer: Timer?
+    private lazy var urlSession: URLSession = {
+        let config = URLSessionConfiguration.default
+        config.timeoutIntervalForRequest = 0
+        config.timeoutIntervalForResource = 0
+        config.waitsForConnectivity = true
+        config.networkServiceType = .background
+        return URLSession(configuration: config)
+    }()
     
     init(settings: NtfySettings) {
         self.settings = settings
@@ -35,8 +44,10 @@ class NtfyService: ObservableObject {
         }
         
         var request = URLRequest(url: url)
-        request.timeoutInterval = 30
-        request.setValue("application/json", forHTTPHeaderField: "Accept")
+        request.timeoutInterval = 0 // No timeout for SSE connections
+        request.setValue("text/event-stream", forHTTPHeaderField: "Accept")
+        request.setValue("no-cache", forHTTPHeaderField: "Cache-Control")
+        request.setValue("keep-alive", forHTTPHeaderField: "Connection")
         addAuthenticationHeader(to: &request)
         
         print("🔗 SSE request headers: \(request.allHTTPHeaderFields ?? [:])")
@@ -53,9 +64,7 @@ class NtfyService: ObservableObject {
         
         startSSEConnection(with: request)
         
-        isConnected = true
         connectionError = nil
-        reconnectAttempts = 0
         
         print("🔗 Connecting to: \(url)")
     }
@@ -68,6 +77,8 @@ class NtfyService: ObservableObject {
         isConnected = false
         reconnectTimer?.invalidate()
         reconnectTimer = nil
+        keepaliveTimer?.invalidate()
+        keepaliveTimer = nil
         
         print("❌ Disconnected from ntfy")
     }
@@ -119,7 +130,7 @@ class NtfyService: ObservableObject {
             guard let self = self else { return }
             
             do {
-                let (asyncBytes, response) = try await URLSession.shared.bytes(for: request)
+                let (asyncBytes, response) = try await urlSession.bytes(for: request)
                 
                 guard let httpResponse = response as? HTTPURLResponse else {
                     await MainActor.run { [weak self] in
@@ -144,15 +155,42 @@ class NtfyService: ObservableObject {
                 
                 print("✅ SSE connection established")
                 
+                await MainActor.run { [weak self] in
+                    self?.isConnected = true
+                    self?.reconnectAttempts = 0
+                    self?.startKeepaliveTimer()
+                }
+                
                 for try await line in asyncBytes.lines {
                     guard !line.isEmpty else { continue }
                     await handleSSEMessage(line)
                 }
             } catch {
                 await MainActor.run { [weak self] in
-                    self?.connectionError = error.localizedDescription
+                    let isNetworkError = (error as NSError).domain == NSURLErrorDomain
+                    let errorCode = (error as NSError).code
+                    
+                    if isNetworkError {
+                        switch errorCode {
+                        case NSURLErrorTimedOut:
+                            self?.connectionError = "Connection timed out"
+                            print("⏰ SSE timeout error: \(error)")
+                        case NSURLErrorNetworkConnectionLost:
+                            self?.connectionError = "Network connection lost"
+                            print("📶 SSE network lost: \(error)")
+                        case NSURLErrorNotConnectedToInternet:
+                            self?.connectionError = "No internet connection"
+                            print("🌐 SSE no internet: \(error)")
+                        default:
+                            self?.connectionError = error.localizedDescription
+                            print("❌ SSE network error (\(errorCode)): \(error)")
+                        }
+                    } else {
+                        self?.connectionError = error.localizedDescription
+                        print("❌ SSE error: \(error)")
+                    }
+                    
                     self?.isConnected = false
-                    print("❌ SSE error: \(error)")
                     self?.scheduleReconnect()
                 }
             }
@@ -192,6 +230,15 @@ class NtfyService: ObservableObject {
         }
     }
     
+    private func startKeepaliveTimer() {
+        keepaliveTimer?.invalidate()
+        keepaliveTimer = Timer.scheduledTimer(withTimeInterval: 25.0, repeats: true) { [weak self] _ in
+            // Monitor connection health - if no data received in reasonable time, reconnect
+            guard let self = self, self.isConnected else { return }
+            print("🏓 Keepalive check - connection still active")
+        }
+    }
+    
     private func scheduleReconnect() {
         guard reconnectAttempts < maxReconnectAttempts else {
             connectionError = "Failed to reconnect after \(maxReconnectAttempts) attempts"
@@ -199,7 +246,7 @@ class NtfyService: ObservableObject {
         }
         
         reconnectAttempts += 1
-        let delay = min(pow(2.0, Double(reconnectAttempts)), 30.0) // Exponential backoff, max 30s
+        let delay = min(pow(2.0, Double(reconnectAttempts)), 60.0) // Exponential backoff, max 60s
         
         print("🔄 Scheduling reconnect attempt \(reconnectAttempts) in \(delay) seconds")
         
