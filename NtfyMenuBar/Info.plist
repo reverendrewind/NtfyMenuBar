@@ -6,6 +6,8 @@
 	<true/>
 	<key>CFBundleDisplayName</key>
 	<string>ntfy</string>
+	<key>CFBundleName</key>
+	<string>ntfy</string>
 	<key>NSHumanReadableCopyright</key>
 	<string>© 2025 Rimskij Papa</string>
 </dict>

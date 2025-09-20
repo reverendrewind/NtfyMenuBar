@@ -19,6 +19,7 @@ class StatusBarController: NSObject, ObservableObject, NSWindowDelegate {
         self.viewModel = viewModel
         super.init()
         setupStatusItem()
+        setupNotificationObservers()
     }
     
     private func setupStatusItem() {
@@ -36,6 +37,20 @@ class StatusBarController: NSObject, ObservableObject, NSWindowDelegate {
             button.target = self
             button.sendAction(on: [.leftMouseUp, .rightMouseUp])
         }
+    }
+    
+    private func setupNotificationObservers() {
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleOpenDashboardFromNotification),
+            name: .openDashboardFromNotification,
+            object: nil
+        )
+    }
+    
+    @objc private func handleOpenDashboardFromNotification() {
+        // Open dashboard when triggered from notification action
+        openDashboard()
     }
     
     @objc private func statusItemClicked() {
@@ -325,5 +340,9 @@ class StatusBarController: NSObject, ObservableObject, NSWindowDelegate {
                 settingsWindow = nil
             }
         }
+    }
+    
+    deinit {
+        NotificationCenter.default.removeObserver(self)
     }
 }

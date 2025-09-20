@@ -14,7 +14,7 @@ A native macOS menu bar application for [ntfy](https://ntfy.sh) notifications. G
 - **Real-time Notifications**: Live connection to ntfy servers using Server-Sent Events (SSE)
 - **Dual Authentication**: Support for both Basic Authentication and Bearer Token authentication
 - **Secure Storage**: Credentials stored securely in macOS Keychain
-- **Native macOS Notifications**: System notifications for incoming messages
+- **Enhanced Notifications**: Rich, branded notifications with priority indicators and interactive actions
 - **Smart Window Positioning**: Windows appear in upper-right corner, properly positioned and sized
 - **Custom App Icons**: Generated from SVG with proper menu bar template rendering
 - **Customizable Settings**: Configure notification preferences and message limits
@@ -102,29 +102,96 @@ Access tokens must be exactly 32 characters and start with `tk_`. Tokens are sto
   - Clear messages
   - Quit application
 
-### Receiving Notifications
-Once configured and connected, you'll receive:
-- Native macOS notifications for new messages
-- Quick message preview in right-click menu
-- Full message history in the dashboard
-- Real-time updates via Server-Sent Events
+### Enhanced Notifications
+Once configured and connected, you'll receive rich, branded notifications featuring:
 
-### Sending Notifications
-Send notifications to your configured topic using curl, the ntfy mobile app, or any HTTP client:
+**Visual Branding:**
+- "ntfy:" prefix for instant recognition
+- Priority-based emoji indicators (🔴 Urgent, 🟠 High, 🟡 Default, 🔵 Low, ⚪ Min)
+- Smart content formatting with metadata display
+
+**Rich Content:**
+- Message content with intelligent truncation
+- Priority level and tag information
+- Timestamp and topic context
+- Server identification
+
+**Interactive Actions:**
+- "Open Dashboard" button for quick access
+- "Mark Read" to dismiss notifications
+- "Dismiss" for immediate removal
+- Click notification to open dashboard
+
+**Priority Features:**
+- Critical sounds for high-priority messages (4-5)
+- Visual priority indicators throughout
+- Badge numbers based on message importance
+
+### Notification Examples
+
+**High Priority Alert:**
+```
+Title: ntfy: 🔴 Server Alert
+Subtitle: 📂 production • 🌐 ntfy
+Body: Database connection lost - immediate attention required
+      ⚠️ Priority: 5
+      🏷️ Tags: urgent, database, production
+      🕐 2:30 PM
+[Open Dashboard] [Mark Read] [Dismiss]
+```
+
+**Regular Update:**
+```
+Title: ntfy: 📢 Deployment Complete  
+Subtitle: 📂 updates • 🌐 ntfy
+Body: Version 2.1.4 successfully deployed to staging
+      🏷️ Tags: deployment, staging
+      🕐 2:25 PM
+[Open Dashboard] [Mark Read] [Dismiss]
+```
+
+### Sending Rich Notifications
+Send notifications to your configured topic using curl, the ntfy mobile app, or any HTTP client. The app enhances all notifications with branding and interactive features:
 
 ```bash
-# Simple message
+# Simple message (enhanced automatically)
 curl -d "Hello from ntfy!" https://ntfy.sh/your-topic
 
-# With title and tags
+# Rich notification with priority and tags
 curl -X POST https://ntfy.sh/your-topic \
   -H "Title: Server Alert" \
-  -H "Tags: warning,server" \
-  -d "Server maintenance in 5 minutes"
+  -H "Priority: 4" \
+  -H "Tags: warning,server,production" \
+  -d "Server maintenance starting in 5 minutes"
+
+# Critical alert (gets 🔴 indicator and critical sound)
+curl -X POST https://ntfy.sh/your-topic \
+  -H "Title: Database Down" \
+  -H "Priority: 5" \
+  -H "Tags: urgent,database,critical" \
+  -d "Primary database connection lost - immediate attention required"
+
+# Low priority update (gets 🔵 indicator)
+curl -X POST https://ntfy.sh/your-topic \
+  -H "Title: Backup Complete" \
+  -H "Priority: 2" \
+  -H "Tags: backup,success" \
+  -d "Daily backup completed successfully at 3:00 AM"
 
 # With authentication (if required)
-curl -u username:password -d "Authenticated message" https://your-server.com/your-topic
+curl -u username:password \
+  -H "Title: Authenticated Alert" \
+  -H "Priority: 3" \
+  -d "Secured message content" \
+  https://your-server.com/your-topic
 ```
+
+**Priority Levels & Visual Indicators:**
+- **Priority 5** → 🔴 Critical (urgent sound, immediate attention)
+- **Priority 4** → 🟠 High (critical sound, important)  
+- **Priority 3** → 🟡 Default (standard notification)
+- **Priority 2** → 🔵 Low (quiet notification)
+- **Priority 1** → ⚪ Minimal (subtle notification)
 
 ## Privacy & Security
 
