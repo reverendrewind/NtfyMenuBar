@@ -77,21 +77,24 @@ class StatusBarController: NSObject, ObservableObject, NSWindowDelegate {
             // Window exists and is visible, close it (toggle behavior)
             window.close()
         } else {
-            let windowSize = CGSize(width: 350, height: 500)
+            let windowSize = CGSize(width: 320, height: 300)
             
-            // Position below menu bar using screen coordinates
-            guard let screen = NSScreen.main else { return }
-            let screenFrame = screen.frame  // Full screen including menu bar
-            let visibleFrame = screen.visibleFrame  // Excludes menu bar
+            // Get the actual menu bar button position (this worked before!)
+            guard let button = statusItem?.button else { return }
+            let buttonFrame = button.frame
+            let buttonWindow = button.window!
+            let buttonScreenRect = buttonWindow.convertToScreen(buttonFrame)
             
-            // Position window directly attached below menu bar
-            let x = screenFrame.maxX - windowSize.width - 10  // 10pt margin from right
-            let y = visibleFrame.maxY - windowSize.height  // Directly below menu bar, no gap
+            // Center window below button with overflow protection
+            let buttonCenterX = buttonScreenRect.midX
+            let windowX = max(0, min(buttonCenterX - windowSize.width / 2, 
+                                   buttonWindow.screen!.frame.maxX - windowSize.width))
+            let windowY = buttonScreenRect.minY - windowSize.height - 5
             
-            print("📍 Screen visible frame: \(screenFrame)")
-            print("📍 Window position: x=\(x), y=\(y)")
+            print("📍 Button screen rect: \(buttonScreenRect)")
+            print("📍 Window position: x=\(windowX), y=\(windowY)")
             
-            createDashboardWindow(at: CGPoint(x: x, y: y), size: windowSize)
+            createDashboardWindow(at: CGPoint(x: windowX, y: windowY), size: windowSize)
         }
     }
     

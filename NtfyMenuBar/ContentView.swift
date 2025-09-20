@@ -29,7 +29,7 @@ struct ContentView: View {
             footerView
         }
         .padding()
-        .frame(width: 350, height: 500)
+        .frame(width: 320, height: 300)
         .background(Color(NSColor.controlBackgroundColor))
         .onExitCommand {
             // Close on Escape key

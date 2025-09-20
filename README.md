@@ -9,7 +9,7 @@ A native macOS menu bar application for [ntfy](https://ntfy.sh) notifications. G
 ## Features
 
 - **Menu Bar Integration**: Runs discretely in your menu bar without a dock icon (LSUIElement)
-- **Flat Panel Dashboard**: Click menu bar icon to open borderless dashboard directly below menu bar
+- **Flat Panel Dashboard**: Click menu bar icon to open borderless dashboard centered below menu bar icon
 - **Toggle Behavior**: Click dashboard icon to open, click again (or click outside) to close
 - **Quick Message Preview**: Right-click menu shows 5 most recent messages with timestamps
 - **Real-time Notifications**: Live connection to ntfy servers using Server-Sent Events (SSE)
@@ -28,7 +28,7 @@ A native macOS menu bar application for [ntfy](https://ntfy.sh) notifications. G
 *Menu Bar Interface*
 - Clean, minimal menu bar icon that matches system appearance
 - Right-click context menu with recent messages and quick actions
-- Borderless dashboard panel that appears directly below menu bar
+- Borderless dashboard panel that appears centered below menu bar icon with overflow protection
 
 *Dashboard Features*
 - Shows server URL and topic in header when connected
@@ -106,7 +106,7 @@ Access tokens must be exactly 32 characters and start with `tk_`. Tokens are sto
 ## Usage
 
 ### Menu Bar Interaction
-- **Left Click**: Toggle borderless dashboard panel (appears directly below menu bar)
+- **Left Click**: Toggle borderless dashboard panel (appears centered below menu bar icon)
 - **Right Click**: Access context menu with:
   - Recent 5 messages with timestamps and priority indicators
   - Quick access to dashboard and settings

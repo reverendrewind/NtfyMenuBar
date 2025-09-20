@@ -9,7 +9,7 @@ NtfyMenuBar is a native macOS menu bar application for receiving ntfy.sh notific
 ## Architecture
 
 - **Main App**: `NtfyMenuBar/NtfyMenuBarApp.swift` - SwiftUI app with AppDelegate for status bar control
-- **Status Bar**: `StatusBarController.swift` - NSStatusItem management and borderless window positioning
+- **Status Bar**: `StatusBarController.swift` - NSStatusItem management with centered dashboard positioning and overflow protection
 - **Models**: Data structures for NtfyMessage and NtfySettings with Codable support
 - **Services**: Server-Sent Events (SSE) via NtfyService using URLSession streaming
 - **ViewModels**: Observable state management with NtfyViewModel using @MainActor
@@ -22,7 +22,7 @@ NtfyMenuBar is a native macOS menu bar application for receiving ntfy.sh notific
 **Menu Bar Integration:**
 - Uses NSStatusItem with custom DashboardWindow class for borderless display
 - LSUIElement = true hides app from dock while maintaining menu bar presence
-- Positioning via screen.visibleFrame for consistent placement below menu bar
+- Positioning centered below menu bar icon using button coordinates with screen edge overflow protection
 - Multi-desktop support with .moveToActiveSpace collection behavior
 
 **Connection Management:**
