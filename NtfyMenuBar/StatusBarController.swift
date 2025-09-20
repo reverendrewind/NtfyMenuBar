@@ -83,35 +83,21 @@ class StatusBarController: NSObject, ObservableObject, NSWindowDelegate {
             var initialX: CGFloat = 0
             var initialY: CGFloat = 0
             
-            if let button = statusItem?.button,
-               let buttonWindow = button.window {
-                // Get the button's position on screen
-                let buttonRect = buttonWindow.convertToScreen(button.frame)
-                
-                print("📍 Button rect: \(buttonRect)")
-                print("📍 Screen height: \(NSScreen.main?.frame.height ?? 0)")
-                
-                // Position window below the status item
-                initialX = buttonRect.origin.x + buttonRect.width - windowSize.width
-                // Make sure it doesn't go off the left edge of the screen
-                if initialX < 0 {
-                    initialX = buttonRect.origin.x
-                }
-                
-                // Position just below the menu bar
-                // buttonRect.origin.y is near the top of screen (high Y value)
-                // We subtract window height to position below
-                initialY = buttonRect.origin.y - windowSize.height - 2
-                
-                print("📍 Window position: x=\(initialX), y=\(initialY)")
-            } else {
-                // Fallback positioning if we can't get the button position
-                guard let screen = NSScreen.main else { return }
-                let screenFrame = screen.frame
-                initialX = screenFrame.origin.x + screenFrame.size.width - windowSize.width - 20
-                // Position at top of screen minus menu bar and window height
-                initialY = screenFrame.origin.y + screenFrame.size.height - 30 - windowSize.height
-            }
+            // Simple positioning at top of screen
+            guard let screen = NSScreen.main else { return }
+            let screenFrame = screen.frame
+            
+            // Position window at right side of screen
+            initialX = screenFrame.maxX - windowSize.width - 20
+            
+            // Position just below menu bar at TOP of screen
+            // screenFrame.maxY is the top of the screen
+            // Subtract menu bar height (25) and window height
+            initialY = screenFrame.maxY - 25 - windowSize.height - 5
+            
+            print("📍 Screen frame: \(screenFrame)")
+            print("📍 Window will be at: x=\(initialX), y=\(initialY)")
+            print("📍 Top of screen (maxY): \(screenFrame.maxY)")
             
             // Create new window with correct initial position
             let contentView = ContentView().environmentObject(viewModel)
@@ -239,15 +225,14 @@ class StatusBarController: NSObject, ObservableObject, NSWindowDelegate {
             let screenFrame = screen.frame
             let windowSize = CGSize(width: 500, height: 550)
             
-            // Position window below menu bar with small gap
+            // Calculate X position (centered)
+            let initialX = (screenFrame.width - windowSize.width) / 2
+            
+            // Position just below menu bar at TOP of screen
+            // screenFrame.maxY is the top of the screen
             let menuBarHeight: CGFloat = 25
             let gap: CGFloat = 10
-            
-            // Calculate X position (centered)
-            let initialX = screenFrame.origin.x + (screenFrame.size.width - windowSize.width) / 2
-            
-            // Calculate Y position (just below menu bar)
-            let initialY = screenFrame.origin.y + screenFrame.size.height - menuBarHeight - windowSize.height - gap
+            let initialY = screenFrame.maxY - menuBarHeight - windowSize.height - gap
             
             // Create new settings window with correct initial position
             let settingsView = SettingsView().environmentObject(viewModel)
