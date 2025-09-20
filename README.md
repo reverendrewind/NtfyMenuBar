@@ -34,6 +34,7 @@ A native macOS menu bar application for [ntfy](https://ntfy.sh) notifications. G
 - Shows server URL and topic in header when connected
 - Connection status indicator (green=connected, red=disconnected, orange=not configured)
 - Real-time message list with empty state when no notifications
+- Visual tag emojis for instant notification categorization (99+ supported tag types)
 - Integrated settings and connection controls in footer with proper window management
 
 *Settings Panel*
@@ -206,6 +207,27 @@ curl -u username:password \
 - **Priority 3** → 🟡 Default (standard notification)
 - **Priority 2** → 🔵 Low (quiet notification)
 - **Priority 1** → ⚪ Minimal (subtle notification)
+
+**Tag Emoji Categories (99+ mappings):**
+- **System**: 🚨 urgent, ⚠️ warning, ❌ error, ✅ success, ℹ️ info
+- **Infrastructure**: 🖥️ server, 🗄️ database, 🌐 network, 💾 backup, 🔒 security
+- **Development**: 🚀 deploy, 🔧 build, 🧪 test, 🐛 bug, ✨ feature
+- **Multimedia**: 📹 video, 🎵 audio, 📸 photo, 📺 live, ⬆️ upload, ⬇️ download
+- **Communication**: 📧 email, 💬 chat, 👥 social, 📞 call
+- **Web/API**: 🔌 api, 🌍 web, 🔐 ssl, ☁️ aws, 🐳 docker
+- **Business**: 📅 calendar, ✅ task, 💰 payment, 📈 analytics
+- **Gaming**: 🎮 game, ⚽ sport, 📰 news
+- **IoT/Smart Home**: 🏠 home, 🌡️ temperature, 💡 light, 🚪 door, 🌱 garden
+- **Transportation**: 🚗 car, 🚚 truck, 🚴 bike, 🚆 train, ✈️ plane, ⛽ fuel
+- **Food**: 🍽️ restaurant, 🍕 pizza, ☕ coffee, 🍺 beer, 🛒 shopping
+- **Health**: 🏥 medical, 💪 fitness, ❤️ heart, 🏃 exercise, 😴 sleep, 💊 medicine
+- **Education**: 🎓 school, 📚 books, 📖 course, 📝 exam
+- **Finance**: 🏦 bank, 💳 credit, 📊 trading, ₿ crypto, 🧾 tax
+- **Science**: 🔬 research, 🤖 AI, 🛰️ satellite, ⚗️ lab, 🧬 DNA
+- **Location**: 📍 GPS, 🏘️ address, 🏙️ city, 🗺️ country
+- **Time**: 🕐 clock, ⏰ alarm, ⏱️ timer, 🎂 birthday
+- **Tools**: 🔍 search, 🔀 filter, 📋 copy, 🗑️ delete, ✏️ edit, 📄 file, 📁 folder
+- **Weather**: ☀️ sun, ☁️ cloud, 🌧️ rain, ❄️ snow, ⛈️ storm, 🔥 fire, 🌊 water
 
 ## Privacy & Security
 
