@@ -66,8 +66,6 @@ class StatusBarController: NSObject, ObservableObject, NSWindowDelegate {
     }
     
     private func openDashboard() {
-        NSApp.activate(ignoringOtherApps: true)
-        
         if let window = dashboardWindow, window.isVisible {
             // Window exists and is visible, close it (toggle behavior)
             window.close()
@@ -190,8 +188,6 @@ class StatusBarController: NSObject, ObservableObject, NSWindowDelegate {
     }
     
     @objc private func openSettings() {
-        NSApp.activate(ignoringOtherApps: true)
-        
         if let window = settingsWindow, window.isVisible {
             // Settings window exists and is visible, bring to front
             window.orderFront(nil)
