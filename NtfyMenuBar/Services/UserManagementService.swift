@@ -128,7 +128,7 @@ class UserManagementService: ObservableObject {
         error = nil
 
         do {
-            try await performChangePassword(username: user.username, password: newPassword)
+            try await performChangePassword(username: user.username, password: newPassword, role: UserRole(rawValue: user.role) ?? .user)
         } catch {
             isLoading = false
             throw error
@@ -247,7 +247,7 @@ class UserManagementService: ObservableObject {
         }
     }
 
-    private func performChangePassword(username: String, password: String) async throws {
+    private func performChangePassword(username: String, password: String, role: UserRole) async throws {
         guard let url = createUserURL(for: username) else {
             throw UserManagementError.invalidUsername
         }
@@ -257,8 +257,8 @@ class UserManagementService: ObservableObject {
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         addAuthenticationHeader(to: &request)
 
-        // Use PUT with force parameter to change existing user's password
-        let passwordRequest = ChangePasswordPutRequest(username: username, password: password, force: true)
+        // Use PUT to change existing user's password (ntfy automatically handles existing users)
+        let passwordRequest = CreateUserRequest(username: username, password: password, role: role)
 
         do {
             request.httpBody = try JSONEncoder().encode(passwordRequest)
@@ -297,7 +297,12 @@ class UserManagementService: ObservableObject {
             baseURL = "https://" + baseURL
         }
 
-        let urlString = "\(baseURL)/v1/users/\(username)"
+        // URL encode the username to handle special characters
+        guard let encodedUsername = username.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) else {
+            return nil
+        }
+
+        let urlString = "\(baseURL)/v1/users/\(encodedUsername)"
         return URL(string: urlString)
     }
 
@@ -308,7 +313,12 @@ class UserManagementService: ObservableObject {
             baseURL = "https://" + baseURL
         }
 
-        let urlString = "\(baseURL)/v1/users/\(username)/role"
+        // URL encode the username to handle special characters
+        guard let encodedUsername = username.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) else {
+            return nil
+        }
+
+        let urlString = "\(baseURL)/v1/users/\(encodedUsername)/role"
         return URL(string: urlString)
     }
 
