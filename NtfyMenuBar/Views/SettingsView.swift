@@ -23,18 +23,15 @@ struct SettingsView: View {
     @State private var autoConnect: Bool = true
     @State private var appearanceMode: AppearanceMode = .system
     @State private var selectedTab: SettingsTab = .connection
-    @State private var showingUserManagement = false
 
     enum SettingsTab: String, CaseIterable {
         case connection = "Connection"
         case preferences = "Preferences"
-        case userManagement = "User Management"
 
         var systemImage: String {
             switch self {
             case .connection: return "network"
             case .preferences: return "gearshape"
-            case .userManagement: return "person.2"
             }
         }
     }
@@ -67,8 +64,6 @@ struct SettingsView: View {
                         connectionSettingsView
                     case .preferences:
                         preferencesSettingsView
-                    case .userManagement:
-                        userManagementView
                     }
                 }
                 .padding(20)
@@ -84,13 +79,11 @@ struct SettingsView: View {
 
                 Spacer()
 
-                if selectedTab != .userManagement {
-                    Button("Save") {
-                        saveSettings()
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .disabled(!isValidConfiguration)
+                Button("Save") {
+                    saveSettings()
                 }
+                .buttonStyle(.borderedProminent)
+                .disabled(!isValidConfiguration)
             }
             .padding(20)
             .padding(.top, 0)
@@ -99,9 +92,6 @@ struct SettingsView: View {
         .background(Color.theme.windowBackground)
         .onAppear {
             loadCurrentSettings()
-        }
-        .sheet(isPresented: $showingUserManagement) {
-            UserManagementView(settings: viewModel.settings)
         }
     }
 
@@ -208,77 +198,6 @@ struct SettingsView: View {
         }
     }
 
-    private var userManagementView: some View {
-        VStack(alignment: .leading, spacing: 20) {
-            VStack(alignment: .leading, spacing: 12) {
-                Text("User Management")
-                    .font(.headline)
-
-                Text("Manage users on your ntfy server. Requires admin permissions.")
-                    .font(.body)
-                    .foregroundColor(.secondary)
-
-                if viewModel.settings.isConfigured {
-                    VStack(alignment: .leading, spacing: 16) {
-                        HStack {
-                            Image(systemName: "person.2")
-                                .foregroundColor(.blue)
-                            Text("Available Features")
-                                .font(.subheadline)
-                                .fontWeight(.medium)
-                        }
-
-                        VStack(alignment: .leading, spacing: 8) {
-                            FeatureRow(icon: "plus.circle", title: "Create Users", description: "Add new users with custom roles")
-                            FeatureRow(icon: "person.badge.minus", title: "Delete Users", description: "Remove users from the server")
-                            FeatureRow(icon: "crown", title: "Role Management", description: "Assign admin or user roles")
-                            FeatureRow(icon: "key", title: "Password Management", description: "Reset user passwords")
-                        }
-
-                        Button("Open User Manager") {
-                            showingUserManagement = true
-                        }
-                        .buttonStyle(.borderedProminent)
-                    }
-                    .padding(16)
-                    .background(Color.blue.opacity(0.1))
-                    .cornerRadius(8)
-                } else {
-                    VStack(alignment: .leading, spacing: 8) {
-                        HStack {
-                            Image(systemName: "exclamationmark.triangle")
-                                .foregroundColor(.orange)
-                            Text("Server Not Configured")
-                                .font(.headline)
-                                .foregroundColor(.orange)
-                        }
-
-                        Text("Configure your server connection in the Connection tab first.")
-                            .font(.body)
-                            .foregroundColor(.secondary)
-
-                        Button("Go to Connection Settings") {
-                            selectedTab = .connection
-                        }
-                        .buttonStyle(.bordered)
-                    }
-                    .padding(16)
-                    .background(Color.orange.opacity(0.1))
-                    .cornerRadius(8)
-                }
-            }
-
-            VStack(alignment: .leading, spacing: 12) {
-                Text("Coming Soon")
-                    .font(.headline)
-
-                VStack(alignment: .leading, spacing: 8) {
-                    FeatureRow(icon: "chart.bar", title: "Server Statistics", description: "View server metrics and usage")
-                    FeatureRow(icon: "lock.shield", title: "Access Control", description: "Manage topic permissions")
-                }
-            }
-        }
-    }
 
     // MARK: - Private Methods
 
@@ -349,32 +268,6 @@ struct SettingsView: View {
     }
 }
 
-struct FeatureRow: View {
-    let icon: String
-    let title: String
-    let description: String
-
-    var body: some View {
-        HStack(spacing: 12) {
-            Image(systemName: icon)
-                .font(.system(size: 16))
-                .foregroundColor(.blue)
-                .frame(width: 20)
-
-            VStack(alignment: .leading, spacing: 2) {
-                Text(title)
-                    .font(.subheadline)
-                    .fontWeight(.medium)
-
-                Text(description)
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-            }
-
-            Spacer()
-        }
-    }
-}
 
 extension View {
     func placeholder<Content: View>(

@@ -103,7 +103,7 @@ The project follows a structured approach with clear separation of concerns:
 - **Enhanced Notifications**: Rich notifications with priority indicators and interactive actions
 - **Connection Stability**: Improved reconnection logic and keepalive timers
 - **Multi-Desktop Support**: Windows now appear on current desktop, not launch desktop
-- **User Management System**: Complete admin interface for managing ntfy server users with role-based permissions
+- **User Management Removal**: Removed user management feature - ntfy only supports CLI-based user management, no HTTP API available
 
 ### Technical Implementation Details
 - **Window Positioning**: Uses `visibleFrame.maxY - windowHeight` for placement below menu bar
@@ -112,14 +112,17 @@ The project follows a structured approach with clear separation of concerns:
 - **Keychain Storage**: Secure credential storage using Keychain Services API
 - **State Management**: @MainActor isolation with Combine publishers for reactive UI updates
 - **Notification Categories**: UNNotificationCategory with interactive actions (Open, Mark Read, Dismiss)
-- **Admin API Integration**: UserManagementService with complete CRUD operations for ntfy server administration
-- **Role-based Security**: User role validation with admin/user permission management
 
 ### Known Patterns
 - **Window Delegate**: Uses windowDidResignKey for click-outside-to-close behavior
 - **Task Management**: Async/await patterns with proper error handling and cancellation
 - **Memory Management**: Weak self references in timers and closures to prevent retain cycles
 - **Settings Persistence**: Codable structs with UserDefaults and separate Keychain credential storage
+
+### ntfy API Limitations
+- **User Management**: ntfy only provides CLI-based user management (`sudo ntfy user ...` commands). No HTTP API endpoints exist for admin user operations.
+- **Available HTTP APIs**: Only self-service account management endpoints (`/v1/account/*`) for logged-in users to manage their own accounts.
+- **Server Requirements**: Account features require `enable-login: true` in server configuration.
 
 ### Testing
 - App sandbox is enabled, restricting file system access but allowing network connections
