@@ -47,12 +47,17 @@ struct ContentView: View {
                     .lineLimit(1)
                     .truncationMode(.middle)
                 
-                if viewModel.isConnected && !viewModel.settings.topic.isEmpty {
-                    Text(viewModel.settings.topic)
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                        .lineLimit(1)
-                        .truncationMode(.tail)
+                if viewModel.isConnected && !viewModel.settings.topics.isEmpty {
+                    HStack(spacing: 4) {
+                        Image(systemName: "tag.fill")
+                            .font(.system(size: 10))
+                            .foregroundColor(.secondary)
+                        Text(viewModel.settings.topics.joined(separator: ", "))
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                            .lineLimit(1)
+                            .truncationMode(.tail)
+                    }
                 } else if !viewModel.isConnected && viewModel.settings.isConfigured {
                     Text("Not connected")
                         .font(.caption)
