@@ -84,25 +84,14 @@ class StatusBarController: NSObject, ObservableObject, NSWindowDelegate {
             
             let window = NSWindow(
                 contentRect: NSRect(x: initialX, y: initialY, width: windowSize.width, height: windowSize.height),
-                styleMask: [.titled, .closable, .resizable],
+                styleMask: [.borderless, .fullSizeContentView],
                 backing: .buffered,
                 defer: false
             )
-            // Set window title based on server configuration
-            var title = "ntfy Dashboard"
-            if !viewModel.settings.serverURL.isEmpty {
-                var serverName = viewModel.settings.serverURL
-                    .replacingOccurrences(of: "https://", with: "")
-                    .replacingOccurrences(of: "http://", with: "")
-                    .trimmingCharacters(in: CharacterSet(charactersIn: "/"))
-                
-                if !viewModel.settings.topic.isEmpty {
-                    title = "ntfy: \(serverName)/\(viewModel.settings.topic)"
-                } else {
-                    title = "ntfy: \(serverName)"
-                }
-            }
-            window.title = title
+            // Borderless window - no title needed
+            window.backgroundColor = NSColor.windowBackgroundColor
+            window.isOpaque = true
+            window.hasShadow = true
             window.contentViewController = hostingController
             window.isReleasedWhenClosed = false
             window.delegate = self
@@ -111,6 +100,8 @@ class StatusBarController: NSObject, ObservableObject, NSWindowDelegate {
             // Make window appear on all spaces/desktops
             window.collectionBehavior = [.moveToActiveSpace, .transient]
             window.level = .floating
+            // Allow window to become key for proper event handling
+            window.canBecomeKey = true
             window.makeKeyAndOrderFront(nil)
             
             // Keep reference to window
@@ -355,6 +346,14 @@ class StatusBarController: NSObject, ObservableObject, NSWindowDelegate {
             } else if window === settingsWindow {
                 settingsWindow = nil
             }
+        }
+    }
+    
+    func windowDidResignKey(_ notification: Notification) {
+        // Close dashboard when it loses focus (click outside)
+        if let window = notification.object as? NSWindow,
+           window === dashboardWindow {
+            window.close()
         }
     }
     

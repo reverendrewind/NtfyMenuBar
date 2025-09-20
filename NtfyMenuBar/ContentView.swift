@@ -9,6 +9,7 @@ import SwiftUI
 
 struct ContentView: View {
     @EnvironmentObject var viewModel: NtfyViewModel
+    @Environment(\.dismiss) private var dismiss
     @State private var showingSettings = false
     
     var body: some View {
@@ -30,6 +31,13 @@ struct ContentView: View {
         .padding()
         .frame(width: 280)
         .fixedSize()
+        .background(Color(NSColor.windowBackgroundColor))
+        .onExitCommand {
+            // Close on Escape key
+            if let window = NSApplication.shared.keyWindow {
+                window.close()
+            }
+        }
         .sheet(isPresented: $showingSettings) {
             SettingsView()
                 .environmentObject(viewModel)
