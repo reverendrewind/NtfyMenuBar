@@ -62,6 +62,7 @@ struct NtfySettings: Codable {
     var username: String = ""
     var enableNotifications: Bool = true
     var maxRecentMessages: Int = 20
+    var autoConnect: Bool = true
     
     // Password and token stored separately in Keychain for security
     var isConfigured: Bool {

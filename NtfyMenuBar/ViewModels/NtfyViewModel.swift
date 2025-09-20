@@ -22,6 +22,18 @@ class NtfyViewModel: ObservableObject {
     init() {
         self.settings = SettingsManager.loadSettings()
         setupService()
+        
+        // Autoconnect if server is configured and autoconnect is enabled
+        if settings.isConfigured && settings.autoConnect {
+            // Delay slightly to ensure UI is ready
+            Task {
+                try? await Task.sleep(nanoseconds: 500_000_000) // 0.5 seconds
+                await MainActor.run {
+                    print("🚀 Autoconnecting to configured server...")
+                    connect()
+                }
+            }
+        }
     }
     
     func connect() {

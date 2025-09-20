@@ -19,6 +19,7 @@ struct SettingsView: View {
     @State private var accessToken: String = ""
     @State private var enableNotifications: Bool = true
     @State private var maxRecentMessages: Int = 20
+    @State private var autoConnect: Bool = true
     
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
@@ -97,6 +98,9 @@ struct SettingsView: View {
                 
                 Toggle("Enable Notifications", isOn: $enableNotifications)
                 
+                Toggle("Auto-connect at Launch", isOn: $autoConnect)
+                    .help("Automatically connect to the server when the app starts")
+                
                 HStack {
                     Text("Recent Messages: \(maxRecentMessages)")
                     Spacer()
@@ -147,6 +151,7 @@ struct SettingsView: View {
         username = settings.username
         enableNotifications = settings.enableNotifications
         maxRecentMessages = settings.maxRecentMessages
+        autoConnect = settings.autoConnect
         
         if !username.isEmpty {
             password = SettingsManager.loadPassword(for: username) ?? ""
@@ -162,7 +167,8 @@ struct SettingsView: View {
             authMethod: authMethod,
             username: username,
             enableNotifications: enableNotifications,
-            maxRecentMessages: maxRecentMessages
+            maxRecentMessages: maxRecentMessages,
+            autoConnect: autoConnect
         )
         
         SettingsManager.saveSettings(settings)
