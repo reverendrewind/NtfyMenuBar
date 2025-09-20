@@ -84,9 +84,9 @@ class StatusBarController: NSObject, ObservableObject, NSWindowDelegate {
             let screenFrame = screen.frame  // Full screen including menu bar
             let visibleFrame = screen.visibleFrame  // Excludes menu bar
             
-            // Position window just below menu bar
+            // Position window directly attached below menu bar
             let x = screenFrame.maxX - windowSize.width - 10  // 10pt margin from right
-            let y = visibleFrame.maxY - windowSize.height - 5  // Below menu bar, subtract window height
+            let y = visibleFrame.maxY - windowSize.height  // Directly below menu bar, no gap
             
             print("📍 Screen visible frame: \(screenFrame)")
             print("📍 Window position: x=\(x), y=\(y)")
