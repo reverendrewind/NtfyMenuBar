@@ -38,13 +38,44 @@ struct ContentView: View {
     
     private var headerView: some View {
         HStack {
-            Text("ntfy Notifications")
-                .font(.headline)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(serverDisplayName)
+                    .font(.headline)
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+                
+                if !viewModel.settings.topic.isEmpty {
+                    Text(viewModel.settings.topic)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .lineLimit(1)
+                        .truncationMode(.tail)
+                }
+            }
             
             Spacer()
             
             connectionStatusView
         }
+    }
+    
+    private var serverDisplayName: String {
+        var serverURL = viewModel.settings.serverURL
+        
+        // Remove protocol prefix for cleaner display
+        if serverURL.hasPrefix("https://") {
+            serverURL = String(serverURL.dropFirst(8))
+        } else if serverURL.hasPrefix("http://") {
+            serverURL = String(serverURL.dropFirst(7))
+        }
+        
+        // Remove trailing slashes
+        while serverURL.hasSuffix("/") {
+            serverURL = String(serverURL.dropLast())
+        }
+        
+        // Return cleaned URL or default
+        return serverURL.isEmpty ? "Not Configured" : serverURL
     }
     
     private var connectionStatusView: some View {

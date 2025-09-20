@@ -88,7 +88,21 @@ class StatusBarController: NSObject, ObservableObject, NSWindowDelegate {
                 backing: .buffered,
                 defer: false
             )
-            window.title = "ntfy Dashboard"
+            // Set window title based on server configuration
+            var title = "ntfy Dashboard"
+            if !viewModel.settings.serverURL.isEmpty {
+                var serverName = viewModel.settings.serverURL
+                    .replacingOccurrences(of: "https://", with: "")
+                    .replacingOccurrences(of: "http://", with: "")
+                    .trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+                
+                if !viewModel.settings.topic.isEmpty {
+                    title = "ntfy: \(serverName)/\(viewModel.settings.topic)"
+                } else {
+                    title = "ntfy: \(serverName)"
+                }
+            }
+            window.title = title
             window.contentViewController = hostingController
             window.isReleasedWhenClosed = false
             window.delegate = self
