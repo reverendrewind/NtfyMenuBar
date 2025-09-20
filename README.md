@@ -9,11 +9,14 @@ A native macOS menu bar application for [ntfy](https://ntfy.sh) notifications. G
 ## Features
 
 - **Menu Bar Integration**: Runs discretely in your menu bar without a dock icon
+- **One-Click Dashboard**: Click menu bar icon to open dashboard, click again to close (toggle behavior)
+- **Quick Message Preview**: Right-click menu shows 5 most recent messages with timestamps
 - **Real-time Notifications**: Live connection to ntfy servers using Server-Sent Events (SSE)
 - **Dual Authentication**: Support for both Basic Authentication and Bearer Token authentication
 - **Secure Storage**: Credentials stored securely in macOS Keychain
 - **Native macOS Notifications**: System notifications for incoming messages
-- **Recent Messages**: View and manage recent notification history
+- **Smart Window Positioning**: Windows appear in upper-right corner, properly positioned and sized
+- **Custom App Icons**: Generated from SVG with proper menu bar template rendering
 - **Customizable Settings**: Configure notification preferences and message limits
 - **Sandbox Compatible**: Full App Sandbox support with proper network entitlements
 
@@ -90,11 +93,21 @@ Access tokens must be exactly 32 characters and start with `tk_`. Tokens are sto
 
 ## Usage
 
+### Menu Bar Interaction
+- **Left Click**: Toggle dashboard window (open/close)
+- **Right Click**: Access context menu with:
+  - Recent 5 messages with timestamps
+  - Settings access
+  - Connect/Disconnect toggle
+  - Clear messages
+  - Quit application
+
 ### Receiving Notifications
 Once configured and connected, you'll receive:
 - Native macOS notifications for new messages
-- Menu bar badge indication for unread messages
-- Message history in the dashboard
+- Quick message preview in right-click menu
+- Full message history in the dashboard
+- Real-time updates via Server-Sent Events
 
 ### Sending Notifications
 Send notifications to your configured topic using curl, the ntfy mobile app, or any HTTP client:
@@ -125,7 +138,8 @@ curl -u username:password -d "Authenticated message" https://your-server.com/you
 
 ### Key Components
 
-- **NtfyMenuBarApp**: SwiftUI app entry point with MenuBarExtra integration
+- **NtfyMenuBarApp**: SwiftUI app entry point with AppDelegate integration
+- **StatusBarController**: NSStatusItem management for menu bar interactions
 - **NtfyService**: SSE connection management and message processing
 - **SettingsManager**: Secure credential storage using Keychain Services
 - **NtfyViewModel**: Reactive state management with Combine

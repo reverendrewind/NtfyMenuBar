@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="22" height="22" viewBox="0 0 22 22" xmlns="http://www.w3.org/2000/svg">
+  <!-- Simple bell silhouette for menu bar - black on transparent -->
+  <g transform="translate(11, 11)">
+    <!-- Bell body -->
+    <path d="M -6 -3 
+             C -6 -7, -4 -8, 0 -8
+             C 4 -8, 6 -7, 6 -3
+             L 6 3
+             C 6 4, 6 5, 7 5
+             L -7 5
+             C -6 5, -6 4, -6 3
+             Z" 
+          fill="black"/>
+    
+    <!-- Bell handle -->
+    <circle cx="0" cy="-9" r="1" fill="black"/>
+    
+    <!-- Notification dot -->
+    <circle cx="5" cy="-5" r="2" fill="black"/>
+    
+    <!-- Bell bottom -->
+    <ellipse cx="0" cy="6" rx="8" ry="1.5" fill="black"/>
+  </g>
+</svg>
