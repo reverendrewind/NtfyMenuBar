@@ -88,6 +88,9 @@ class StatusBarController: NSObject, ObservableObject, NSWindowDelegate {
                 // Get the button's position on screen
                 let buttonRect = buttonWindow.convertToScreen(button.frame)
                 
+                print("📍 Button rect: \(buttonRect)")
+                print("📍 Screen height: \(NSScreen.main?.frame.height ?? 0)")
+                
                 // Position window below the status item
                 initialX = buttonRect.origin.x + buttonRect.width - windowSize.width
                 // Make sure it doesn't go off the left edge of the screen
@@ -96,12 +99,17 @@ class StatusBarController: NSObject, ObservableObject, NSWindowDelegate {
                 }
                 
                 // Position just below the menu bar
-                initialY = buttonRect.origin.y - windowSize.height - 5
+                // buttonRect.origin.y is near the top of screen (high Y value)
+                // We subtract window height to position below
+                initialY = buttonRect.origin.y - windowSize.height - 2
+                
+                print("📍 Window position: x=\(initialX), y=\(initialY)")
             } else {
                 // Fallback positioning if we can't get the button position
                 guard let screen = NSScreen.main else { return }
                 let screenFrame = screen.frame
                 initialX = screenFrame.origin.x + screenFrame.size.width - windowSize.width - 20
+                // Position at top of screen minus menu bar and window height
                 initialY = screenFrame.origin.y + screenFrame.size.height - 30 - windowSize.height
             }
             
