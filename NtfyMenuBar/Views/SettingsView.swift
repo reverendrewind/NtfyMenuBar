@@ -15,6 +15,7 @@ struct SettingsView: View {
     @State private var serverURL: String = ""
     @State private var topics: [String] = []
     @State private var newTopic: String = ""
+    @State private var topicValidationError: String = ""
     @State private var authMethod: AuthenticationMethod = .basicAuth
     @State private var username: String = ""
     @State private var password: String = ""
@@ -146,26 +147,49 @@ struct SettingsView: View {
                         }
 
                         // Compact add topic field
-                        HStack(spacing: 6) {
-                            TextField("Add topic", text: $newTopic)
-                                .textFieldStyle(.roundedBorder)
-                                .frame(maxWidth: 150)
-                                .onSubmit {
-                                    addTopic()
+                        VStack(alignment: .leading, spacing: 4) {
+                            HStack(spacing: 6) {
+                                TextField("Add topic (e.g., my-alerts)", text: $newTopic)
+                                    .textFieldStyle(.roundedBorder)
+                                    .frame(maxWidth: 180)
+                                    .onSubmit {
+                                        addTopic()
+                                    }
+                                    .onChange(of: newTopic) { _ in
+                                        // Clear error when user types
+                                        if !topicValidationError.isEmpty {
+                                            topicValidationError = ""
+                                        }
+                                        // Auto-lowercase and remove spaces
+                                        newTopic = newTopic.lowercased().replacingOccurrences(of: " ", with: "-")
+                                    }
+
+                                Button(action: addTopic) {
+                                    Image(systemName: "plus.circle.fill")
+                                        .foregroundColor(.blue)
                                 }
-
-                            Button(action: addTopic) {
-                                Image(systemName: "plus.circle.fill")
-                                    .foregroundColor(.blue)
+                                .buttonStyle(.plain)
+                                .disabled(newTopic.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                             }
-                            .buttonStyle(.plain)
-                            .disabled(newTopic.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                        }
 
-                        if topics.isEmpty {
-                            Text("Add at least one topic")
-                                .font(.caption)
-                                .foregroundColor(.orange)
+                            // Validation error or help text
+                            if !topicValidationError.isEmpty {
+                                HStack(spacing: 3) {
+                                    Image(systemName: "exclamationmark.triangle.fill")
+                                        .font(.system(size: 10))
+                                    Text(topicValidationError)
+                                        .font(.caption2)
+                                }
+                                .foregroundColor(.red)
+                            } else if topics.isEmpty {
+                                Text("Add at least one topic (letters, numbers, hyphens only)")
+                                    .font(.caption2)
+                                    .foregroundColor(.secondary)
+                            } else {
+                                Text("Topics: letters, numbers, hyphens, underscores")
+                                    .font(.caption2)
+                                    .foregroundColor(.secondary)
+                            }
                         }
                     }
                 }
@@ -266,17 +290,63 @@ struct SettingsView: View {
     }
 
     private func addTopic() {
-        let trimmedTopic = newTopic.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmedTopic.isEmpty, !topics.contains(trimmedTopic) else { return }
+        let trimmedTopic = newTopic.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+
+        // Clear any previous error
+        topicValidationError = ""
+
+        // Check if empty
+        guard !trimmedTopic.isEmpty else {
+            topicValidationError = "Topic cannot be empty"
+            return
+        }
+
+        // Validate topic name format (letters, numbers, hyphens, underscores only)
+        let validPattern = "^[a-z0-9_-]+$"
+        let regex = try? NSRegularExpression(pattern: validPattern)
+        let range = NSRange(location: 0, length: trimmedTopic.utf16.count)
+
+        guard regex?.firstMatch(in: trimmedTopic, options: [], range: range) != nil else {
+            topicValidationError = "Only letters, numbers, hyphens and underscores allowed"
+            return
+        }
+
+        // Check for duplicates
+        guard !topics.contains(trimmedTopic) else {
+            topicValidationError = "Topic already added"
+            return
+        }
+
+        // Check length (ntfy has limits)
+        guard trimmedTopic.count <= 64 else {
+            topicValidationError = "Topic name too long (max 64 characters)"
+            return
+        }
 
         topics.append(trimmedTopic)
         newTopic = ""
+        topicValidationError = ""
     }
 
     private func loadCurrentSettings() {
         let settings = SettingsManager.loadSettings()
         serverURL = settings.serverURL
-        topics = settings.topics
+
+        // Filter and validate loaded topics
+        topics = settings.topics.compactMap { topic in
+            let cleaned = topic.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+            let validPattern = "^[a-z0-9_-]+$"
+            let regex = try? NSRegularExpression(pattern: validPattern)
+            let range = NSRange(location: 0, length: cleaned.utf16.count)
+
+            if !cleaned.isEmpty &&
+               cleaned.count <= 64 &&
+               regex?.firstMatch(in: cleaned, options: [], range: range) != nil {
+                return cleaned
+            }
+            return nil
+        }
+
         authMethod = settings.authMethod
         username = settings.username
         enableNotifications = settings.enableNotifications
