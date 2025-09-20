@@ -113,6 +113,12 @@ struct ChangePasswordRequest: Codable {
     let password: String
 }
 
+struct ChangePasswordPutRequest: Codable {
+    let username: String
+    let password: String
+    let force: Bool
+}
+
 struct ChangeRoleRequest: Codable {
     let role: String
 

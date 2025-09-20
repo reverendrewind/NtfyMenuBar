@@ -248,16 +248,17 @@ class UserManagementService: ObservableObject {
     }
 
     private func performChangePassword(username: String, password: String) async throws {
-        guard let url = createUserPasswordURL(for: username) else {
+        guard let url = createUserURL(for: username) else {
             throw UserManagementError.invalidUsername
         }
 
         var request = URLRequest(url: url)
-        request.httpMethod = "PATCH"
+        request.httpMethod = "PUT"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         addAuthenticationHeader(to: &request)
 
-        let passwordRequest = ChangePasswordRequest(password: password)
+        // Use PUT with force parameter to change existing user's password
+        let passwordRequest = ChangePasswordPutRequest(username: username, password: password, force: true)
 
         do {
             request.httpBody = try JSONEncoder().encode(passwordRequest)
@@ -311,16 +312,6 @@ class UserManagementService: ObservableObject {
         return URL(string: urlString)
     }
 
-    private func createUserPasswordURL(for username: String) -> URL? {
-        var baseURL = settings.serverURL
-
-        if !baseURL.hasPrefix("http://") && !baseURL.hasPrefix("https://") {
-            baseURL = "https://" + baseURL
-        }
-
-        let urlString = "\(baseURL)/v1/users/\(username)/password"
-        return URL(string: urlString)
-    }
 
     // MARK: - Authentication
 
