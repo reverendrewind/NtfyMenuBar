@@ -233,9 +233,11 @@ class NtfyService: ObservableObject {
     private func startKeepaliveTimer() {
         keepaliveTimer?.invalidate()
         keepaliveTimer = Timer.scheduledTimer(withTimeInterval: 25.0, repeats: true) { [weak self] _ in
-            // Monitor connection health - if no data received in reasonable time, reconnect
-            guard let self = self, self.isConnected else { return }
-            print("🏓 Keepalive check - connection still active")
+            Task { @MainActor [weak self] in
+                // Monitor connection health - if no data received in reasonable time, reconnect
+                guard let self = self, self.isConnected else { return }
+                print("🏓 Keepalive check - connection still active")
+            }
         }
     }
     
