@@ -39,17 +39,21 @@ struct ContentView: View {
     private var headerView: some View {
         HStack {
             VStack(alignment: .leading, spacing: 2) {
-                Text(serverDisplayName)
+                Text(headerTitle)
                     .font(.headline)
                     .lineLimit(1)
                     .truncationMode(.middle)
                 
-                if !viewModel.settings.topic.isEmpty {
+                if viewModel.isConnected && !viewModel.settings.topic.isEmpty {
                     Text(viewModel.settings.topic)
                         .font(.caption)
                         .foregroundColor(.secondary)
                         .lineLimit(1)
                         .truncationMode(.tail)
+                } else if !viewModel.isConnected && viewModel.settings.isConfigured {
+                    Text("Not connected")
+                        .font(.caption)
+                        .foregroundColor(.red)
                 }
             }
             
@@ -57,6 +61,13 @@ struct ContentView: View {
             
             connectionStatusView
         }
+    }
+    
+    private var headerTitle: String {
+        if !viewModel.isConnected {
+            return "ntfy Notifications"
+        }
+        return serverDisplayName
     }
     
     private var serverDisplayName: String {
@@ -81,12 +92,34 @@ struct ContentView: View {
     private var connectionStatusView: some View {
         HStack(spacing: 4) {
             Circle()
-                .fill(viewModel.isConnected ? .green : .red)
+                .fill(statusColor)
                 .frame(width: 8, height: 8)
             
-            Text(viewModel.isConnected ? "Connected" : "Disconnected")
+            Text(statusText)
                 .font(.caption)
                 .foregroundColor(.secondary)
+        }
+    }
+    
+    private var statusColor: Color {
+        if viewModel.isConnected {
+            return .green
+        } else if !viewModel.settings.isConfigured {
+            return .orange
+        } else {
+            return .red
+        }
+    }
+    
+    private var statusText: String {
+        if viewModel.isConnected {
+            return "Connected"
+        } else if !viewModel.settings.isConfigured {
+            return "Not Configured"
+        } else if viewModel.connectionError != nil {
+            return "Error"
+        } else {
+            return "Disconnected"
         }
     }
     
