@@ -98,8 +98,9 @@ class NtfyService: ObservableObject {
             baseURL = "https://" + baseURL
         }
         
-        let urlString = "\(baseURL)/\(settings.topic)/json"
-        print("🌐 Creating SSE URL: \(urlString)")
+        let topicsString = settings.topics.joined(separator: ",")
+        let urlString = "\(baseURL)/\(topicsString)/json"
+        print("🌐 Creating SSE URL for topics [\(topicsString)]: \(urlString)")
         
         return URL(string: urlString)
     }

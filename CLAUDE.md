@@ -104,6 +104,7 @@ The project follows a structured approach with clear separation of concerns:
 - **Connection Stability**: Improved reconnection logic and keepalive timers
 - **Multi-Desktop Support**: Windows now appear on current desktop, not launch desktop
 - **User Management Removal**: Removed user management feature - ntfy only supports CLI-based user management, no HTTP API available
+- **Multiple Topics Support**: Full support for subscribing to multiple topics simultaneously with topic badges in message display
 
 ### Technical Implementation Details
 - **Window Positioning**: Uses `visibleFrame.maxY - windowHeight` for placement below menu bar
@@ -112,6 +113,7 @@ The project follows a structured approach with clear separation of concerns:
 - **Keychain Storage**: Secure credential storage using Keychain Services API
 - **State Management**: @MainActor isolation with Combine publishers for reactive UI updates
 - **Notification Categories**: UNNotificationCategory with interactive actions (Open, Mark Read, Dismiss)
+- **Multiple Topics**: Comma-separated topic URLs (`/topic1,topic2,topic3/json`) for simultaneous subscriptions with topic badges in UI
 
 ### Known Patterns
 - **Window Delegate**: Uses windowDidResignKey for click-outside-to-close behavior

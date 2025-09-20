@@ -13,7 +13,8 @@ struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
 
     @State private var serverURL: String = ""
-    @State private var topic: String = ""
+    @State private var topics: [String] = []
+    @State private var newTopic: String = ""
     @State private var authMethod: AuthenticationMethod = .basicAuth
     @State private var username: String = ""
     @State private var password: String = ""
@@ -110,11 +111,52 @@ struct SettingsView: View {
                     TextField("https://ntfy.sh", text: $serverURL)
                         .textFieldStyle(.roundedBorder)
 
-                    Text("Topic")
+                    Text("Topics")
                         .font(.caption)
                         .foregroundColor(.secondary)
-                    TextField("my-topic", text: $topic)
-                        .textFieldStyle(.roundedBorder)
+
+                    // Topic list
+                    if !topics.isEmpty {
+                        VStack(alignment: .leading, spacing: 4) {
+                            ForEach(Array(topics.enumerated()), id: \.element) { index, topic in
+                                HStack {
+                                    Text(topic)
+                                        .font(.body)
+                                        .padding(.vertical, 6)
+                                        .padding(.horizontal, 8)
+                                        .background(Color.blue.opacity(0.1))
+                                        .cornerRadius(6)
+
+                                    Spacer()
+
+                                    Button("Remove") {
+                                        topics.remove(at: index)
+                                    }
+                                    .buttonStyle(.borderless)
+                                    .foregroundColor(.red)
+                                    .font(.caption)
+                                }
+                            }
+                        }
+                    }
+
+                    // Add new topic
+                    HStack {
+                        TextField("Add topic (e.g., my-topic)", text: $newTopic)
+                            .textFieldStyle(.roundedBorder)
+
+                        Button("Add") {
+                            addTopic()
+                        }
+                        .buttonStyle(.bordered)
+                        .disabled(newTopic.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                    }
+
+                    if topics.isEmpty {
+                        Text("Add at least one topic to receive notifications")
+                            .font(.caption)
+                            .foregroundColor(.orange)
+                    }
                 }
             }
 
@@ -202,7 +244,7 @@ struct SettingsView: View {
     // MARK: - Private Methods
 
     private var isValidConfiguration: Bool {
-        guard !serverURL.isEmpty && !topic.isEmpty else { return false }
+        guard !serverURL.isEmpty && !topics.isEmpty else { return false }
 
         switch authMethod {
         case .basicAuth:
@@ -212,10 +254,18 @@ struct SettingsView: View {
         }
     }
 
+    private func addTopic() {
+        let trimmedTopic = newTopic.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedTopic.isEmpty, !topics.contains(trimmedTopic) else { return }
+
+        topics.append(trimmedTopic)
+        newTopic = ""
+    }
+
     private func loadCurrentSettings() {
         let settings = SettingsManager.loadSettings()
         serverURL = settings.serverURL
-        topic = settings.topic
+        topics = settings.topics
         authMethod = settings.authMethod
         username = settings.username
         enableNotifications = settings.enableNotifications
@@ -231,9 +281,8 @@ struct SettingsView: View {
     }
 
     private func saveSettings() {
-        let settings = NtfySettings(
+        var settings = NtfySettings(
             serverURL: serverURL,
-            topic: topic,
             authMethod: authMethod,
             username: username,
             enableNotifications: enableNotifications,
@@ -241,6 +290,7 @@ struct SettingsView: View {
             autoConnect: autoConnect,
             appearanceMode: appearanceMode
         )
+        settings.topics = topics
 
         SettingsManager.saveSettings(settings)
 

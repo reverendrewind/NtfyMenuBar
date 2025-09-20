@@ -74,18 +74,28 @@ enum AppearanceMode: String, Codable, CaseIterable {
 
 struct NtfySettings: Codable, Equatable {
     var serverURL: String = ""
-    var topic: String = ""
+    var topics: [String] = []
     var authMethod: AuthenticationMethod = .basicAuth
     var username: String = ""
     var enableNotifications: Bool = true
     var maxRecentMessages: Int = 20
     var autoConnect: Bool = true
     var appearanceMode: AppearanceMode = .system
-    
+
+    // Legacy single topic support for migration
+    var topic: String {
+        get { topics.first ?? "" }
+        set {
+            if !newValue.isEmpty {
+                topics = [newValue]
+            }
+        }
+    }
+
     // Password and token stored separately in Keychain for security
     var isConfigured: Bool {
-        guard !serverURL.isEmpty && !topic.isEmpty else { return false }
-        
+        guard !serverURL.isEmpty && !topics.isEmpty else { return false }
+
         switch authMethod {
         case .basicAuth:
             return !username.isEmpty
@@ -93,6 +103,6 @@ struct NtfySettings: Codable, Equatable {
             return true // Token validation happens in Keychain retrieval
         }
     }
-    
+
     static let `default` = NtfySettings()
 }
