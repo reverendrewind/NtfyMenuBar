@@ -79,29 +79,18 @@ class StatusBarController: NSObject, ObservableObject, NSWindowDelegate {
         } else {
             let windowSize = CGSize(width: 350, height: 500)
             
-            // Get status item position from current event (proven method)
-            guard let event = NSApp.currentEvent,
-                  let eventWindow = event.window else { 
-                // Fallback if current event unavailable
-                createDashboardAtDefaultPosition(windowSize: windowSize)
-                return 
-            }
-            
-            let eventFrame = eventWindow.frame
-            let eventOrigin = eventFrame.origin
-            let eventSize = eventFrame.size
-            
-            // Calculate position centered below status item, with window positioned below menu bar
-            let windowX = eventOrigin.x + eventSize.width/2 - windowSize.width/2
-            let windowY = eventOrigin.y - 20  // 20 points below menu bar
-            
-            // Bounds checking to ensure window stays on screen
+            // Simple approach: position at top-right of screen just below menu bar
             guard let screen = NSScreen.main else { return }
-            let screenFrame = screen.frame
-            let finalX = max(0, min(windowX, screenFrame.maxX - windowSize.width))
-            let finalY = max(0, min(windowY, screenFrame.maxY - windowSize.height))
+            let screenFrame = screen.visibleFrame  // This excludes menu bar area
             
-            createDashboardWindow(at: CGPoint(x: finalX, y: finalY), size: windowSize)
+            // Position window just above the visible frame (i.e., below menu bar)
+            let x = screenFrame.maxX - windowSize.width - 10  // 10pt margin from right
+            let y = screenFrame.maxY - 5  // 5pt below menu bar
+            
+            print("📍 Screen visible frame: \(screenFrame)")
+            print("📍 Window position: x=\(x), y=\(y)")
+            
+            createDashboardWindow(at: CGPoint(x: x, y: y), size: windowSize)
         }
     }
     
