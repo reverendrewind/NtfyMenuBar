@@ -111,51 +111,62 @@ struct SettingsView: View {
                     TextField("https://ntfy.sh", text: $serverURL)
                         .textFieldStyle(.roundedBorder)
 
-                    Text("Topics")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Topics")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
 
-                    // Topic list
-                    if !topics.isEmpty {
-                        VStack(alignment: .leading, spacing: 4) {
-                            ForEach(Array(topics.enumerated()), id: \.element) { index, topic in
-                                HStack {
-                                    Text(topic)
-                                        .font(.body)
-                                        .padding(.vertical, 6)
+                        // Compact horizontal scrolling topic chips
+                        if !topics.isEmpty {
+                            ScrollView(.horizontal, showsIndicators: false) {
+                                HStack(spacing: 6) {
+                                    ForEach(Array(topics.enumerated()), id: \.element) { index, topic in
+                                        HStack(spacing: 4) {
+                                            Text(topic)
+                                                .font(.caption)
+                                                .foregroundColor(.blue)
+
+                                            Button(action: {
+                                                topics.remove(at: index)
+                                            }) {
+                                                Image(systemName: "xmark.circle.fill")
+                                                    .font(.system(size: 12))
+                                                    .foregroundColor(.secondary.opacity(0.7))
+                                            }
+                                            .buttonStyle(.plain)
+                                        }
                                         .padding(.horizontal, 8)
+                                        .padding(.vertical, 4)
                                         .background(Color.blue.opacity(0.1))
-                                        .cornerRadius(6)
-
-                                    Spacer()
-
-                                    Button("Remove") {
-                                        topics.remove(at: index)
+                                        .cornerRadius(12)
                                     }
-                                    .buttonStyle(.borderless)
-                                    .foregroundColor(.red)
-                                    .font(.caption)
                                 }
                             }
+                            .frame(maxHeight: 30)
                         }
-                    }
 
-                    // Add new topic
-                    HStack {
-                        TextField("Add topic (e.g., my-topic)", text: $newTopic)
-                            .textFieldStyle(.roundedBorder)
+                        // Compact add topic field
+                        HStack(spacing: 6) {
+                            TextField("Add topic", text: $newTopic)
+                                .textFieldStyle(.roundedBorder)
+                                .frame(maxWidth: 150)
+                                .onSubmit {
+                                    addTopic()
+                                }
 
-                        Button("Add") {
-                            addTopic()
+                            Button(action: addTopic) {
+                                Image(systemName: "plus.circle.fill")
+                                    .foregroundColor(.blue)
+                            }
+                            .buttonStyle(.plain)
+                            .disabled(newTopic.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                         }
-                        .buttonStyle(.bordered)
-                        .disabled(newTopic.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                    }
 
-                    if topics.isEmpty {
-                        Text("Add at least one topic to receive notifications")
-                            .font(.caption)
-                            .foregroundColor(.orange)
+                        if topics.isEmpty {
+                            Text("Add at least one topic")
+                                .font(.caption)
+                                .foregroundColor(.orange)
+                        }
                     }
                 }
             }
@@ -317,6 +328,7 @@ struct SettingsView: View {
         dismiss()
     }
 }
+
 
 
 extension View {
