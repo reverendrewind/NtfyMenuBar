@@ -8,29 +8,40 @@ A native macOS menu bar application for [ntfy](https://ntfy.sh) notifications. G
 
 ## Features
 
-- **Menu Bar Integration**: Runs discretely in your menu bar without a dock icon
-- **One-Click Dashboard**: Click menu bar icon to open dashboard, click again to close (toggle behavior)
+- **Menu Bar Integration**: Runs discretely in your menu bar without a dock icon (LSUIElement)
+- **Flat Panel Dashboard**: Click menu bar icon to open borderless dashboard directly below menu bar
+- **Toggle Behavior**: Click dashboard icon to open, click again (or click outside) to close
 - **Quick Message Preview**: Right-click menu shows 5 most recent messages with timestamps
 - **Real-time Notifications**: Live connection to ntfy servers using Server-Sent Events (SSE)
+- **Auto-connect at Launch**: Automatically connects to configured server when app starts
 - **Dual Authentication**: Support for both Basic Authentication and Bearer Token authentication
 - **Secure Storage**: Credentials stored securely in macOS Keychain
 - **Enhanced Notifications**: Rich, branded notifications with priority indicators and interactive actions
-- **Smart Window Positioning**: Windows appear in upper-right corner, properly positioned and sized
+- **Multi-Desktop Support**: Dashboard appears on current desktop/space, not locked to launch desktop
 - **Custom App Icons**: Generated from SVG with proper menu bar template rendering
-- **Customizable Settings**: Configure notification preferences and message limits
+- **Customizable Settings**: Configure notification preferences, message limits, and auto-connect
+- **Connection Stability**: Improved SSE handling with auto-reconnect and keepalive timers
 - **Sandbox Compatible**: Full App Sandbox support with proper network entitlements
 
 ## Screenshots
 
 *Menu Bar Interface*
-- Clean, minimal menu bar icon
-- Dropdown menu with quick access to dashboard and settings
+- Clean, minimal menu bar icon that matches system appearance
+- Right-click context menu with recent messages and quick actions
+- Borderless dashboard panel that appears directly below menu bar
+
+*Dashboard Features*
+- Shows server URL and topic in header when connected
+- Connection status indicator (green=connected, red=disconnected, orange=not configured)
+- Real-time message list with empty state when no notifications
+- Settings and connection controls in footer
 
 *Settings Panel*
-- Server configuration (URL and topic)
-- Authentication method selection
-- Secure credential management
-- Notification preferences
+- Server configuration (URL and topic) with validation
+- Authentication method selection (Basic Auth or Access Token)
+- Secure credential management via macOS Keychain
+- Notification preferences and auto-connect toggle
+- Recent messages limit configuration (5-100 messages)
 
 ## Requirements
 
@@ -70,9 +81,10 @@ A native macOS menu bar application for [ntfy](https://ntfy.sh) notifications. G
 
 5. **Set Preferences**:
    - Enable/disable system notifications
+   - Toggle auto-connect at launch
    - Configure maximum recent messages (5-100)
 
-6. **Connect** - The app will automatically connect when properly configured
+6. **Connect** - The app will automatically connect when properly configured (if auto-connect enabled)
 
 ## Authentication
 
@@ -94,13 +106,15 @@ Access tokens must be exactly 32 characters and start with `tk_`. Tokens are sto
 ## Usage
 
 ### Menu Bar Interaction
-- **Left Click**: Toggle dashboard window (open/close)
+- **Left Click**: Toggle borderless dashboard panel (appears directly below menu bar)
 - **Right Click**: Access context menu with:
-  - Recent 5 messages with timestamps
-  - Settings access
-  - Connect/Disconnect toggle
-  - Clear messages
+  - Recent 5 messages with timestamps and priority indicators
+  - Quick access to dashboard and settings
+  - Connect/Disconnect toggle with current status
+  - Clear messages option
   - Quit application
+- **Click Outside Dashboard**: Automatically closes the dashboard panel
+- **Escape Key**: Close dashboard when it has focus
 
 ### Enhanced Notifications
 Once configured and connected, you'll receive rich, branded notifications featuring:
