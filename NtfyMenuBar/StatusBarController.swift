@@ -79,13 +79,14 @@ class StatusBarController: NSObject, ObservableObject, NSWindowDelegate {
         } else {
             let windowSize = CGSize(width: 350, height: 500)
             
-            // Simple approach: position at top-right of screen just below menu bar
+            // Position below menu bar using screen coordinates
             guard let screen = NSScreen.main else { return }
-            let screenFrame = screen.visibleFrame  // This excludes menu bar area
+            let screenFrame = screen.frame  // Full screen including menu bar
+            let visibleFrame = screen.visibleFrame  // Excludes menu bar
             
-            // Position window just above the visible frame (i.e., below menu bar)
+            // Position window just below menu bar
             let x = screenFrame.maxX - windowSize.width - 10  // 10pt margin from right
-            let y = screenFrame.maxY - 5  // 5pt below menu bar
+            let y = visibleFrame.maxY - windowSize.height - 5  // Below menu bar, subtract window height
             
             print("📍 Screen visible frame: \(screenFrame)")
             print("📍 Window position: x=\(x), y=\(y)")
@@ -104,9 +105,9 @@ class StatusBarController: NSObject, ObservableObject, NSWindowDelegate {
     }
     
     private func createDashboardWindow(at position: CGPoint, size: CGSize) {
-        // Create borderless window at origin, then position it
+        // Create borderless window with fixed size
         let window = DashboardWindow(
-            contentRect: NSRect(x: 0, y: 0, width: size.width, height: size.height),
+            contentRect: NSRect(x: position.x, y: position.y, width: size.width, height: size.height),
             styleMask: [.borderless],
             backing: .buffered,
             defer: false
@@ -114,20 +115,23 @@ class StatusBarController: NSObject, ObservableObject, NSWindowDelegate {
         
         // Configure window appearance
         window.backgroundColor = NSColor.controlBackgroundColor
-        window.isOpaque = false
+        window.isOpaque = true  // Changed to true for better rendering
         window.hasShadow = true
         window.level = .popUpMenu // Same level as menu bar menus
         window.isReleasedWhenClosed = false
         window.collectionBehavior = [.moveToActiveSpace, .stationary]
         
-        // Add content
-        let contentView = ContentView().environmentObject(viewModel)
+        // Add content with explicit sizing
+        let contentView = ContentView()
+            .environmentObject(viewModel)
+            .frame(width: size.width, height: size.height)  // Force size
         let hostingController = NSHostingController(rootView: contentView)
+        
+        // Ensure the hosting controller respects the window size
+        hostingController.view.frame = NSRect(x: 0, y: 0, width: size.width, height: size.height)
         window.contentViewController = hostingController
         window.delegate = self
         
-        // Position window using setFrameTopLeftPoint (proven method)
-        window.setFrameTopLeftPoint(position)
         window.makeKeyAndOrderFront(nil)
         dashboardWindow = window
     }
