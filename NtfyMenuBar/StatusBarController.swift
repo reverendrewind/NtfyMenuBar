@@ -9,6 +9,13 @@ import AppKit
 import SwiftUI
 import Combine
 
+// Custom window class that can become key even when borderless
+class DashboardWindow: NSWindow {
+    override var canBecomeKey: Bool {
+        return true
+    }
+}
+
 class StatusBarController: NSObject, ObservableObject, NSWindowDelegate {
     private var statusItem: NSStatusItem?
     let viewModel: NtfyViewModel
@@ -82,7 +89,7 @@ class StatusBarController: NSObject, ObservableObject, NSWindowDelegate {
             let contentView = ContentView().environmentObject(viewModel)
             let hostingController = NSHostingController(rootView: contentView)
             
-            let window = NSWindow(
+            let window = DashboardWindow(
                 contentRect: NSRect(x: initialX, y: initialY, width: windowSize.width, height: windowSize.height),
                 styleMask: [.borderless, .fullSizeContentView],
                 backing: .buffered,
@@ -100,8 +107,6 @@ class StatusBarController: NSObject, ObservableObject, NSWindowDelegate {
             // Make window appear on all spaces/desktops
             window.collectionBehavior = [.moveToActiveSpace, .transient]
             window.level = .floating
-            // Allow window to become key for proper event handling
-            window.canBecomeKey = true
             window.makeKeyAndOrderFront(nil)
             
             // Keep reference to window
