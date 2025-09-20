@@ -77,13 +77,22 @@ class StatusBarController: NSObject, ObservableObject, NSWindowDelegate {
             // Window exists and is visible, close it (toggle behavior)
             window.close()
         } else {
-            // Calculate initial position to avoid flash
+            // Calculate position below menu bar
             guard let screen = NSScreen.main else { return }
-            let screenFrame = screen.visibleFrame
+            let screenFrame = screen.frame // Use full frame to position relative to menu bar
             let windowSize = CGSize(width: 350, height: 500)
-            let margin: CGFloat = 30
-            let initialX = screenFrame.origin.x + screenFrame.size.width - windowSize.width - margin
-            let initialY = screenFrame.origin.y + screenFrame.size.height - windowSize.height - margin
+            
+            // Position window below menu bar with small gap
+            let menuBarHeight: CGFloat = 25 // Standard macOS menu bar height
+            let gap: CGFloat = 10 // Gap between menu bar and window
+            
+            // Calculate X position (right-aligned with margin)
+            let rightMargin: CGFloat = 20
+            let initialX = screenFrame.origin.x + screenFrame.size.width - windowSize.width - rightMargin
+            
+            // Calculate Y position (just below menu bar)
+            // In macOS, Y=0 is at bottom, so we need to calculate from top
+            let initialY = screenFrame.origin.y + screenFrame.size.height - menuBarHeight - windowSize.height - gap
             
             // Create new window with correct initial position
             let contentView = ContentView().environmentObject(viewModel)
@@ -206,13 +215,20 @@ class StatusBarController: NSObject, ObservableObject, NSWindowDelegate {
             window.orderFront(nil)
             window.makeKeyAndOrderFront(nil)
         } else {
-            // Calculate initial position to avoid flash
+            // Calculate position below menu bar (centered)
             guard let screen = NSScreen.main else { return }
-            let screenFrame = screen.visibleFrame
+            let screenFrame = screen.frame
             let windowSize = CGSize(width: 500, height: 550)
-            let margin: CGFloat = 30
-            let initialX = screenFrame.origin.x + screenFrame.size.width - windowSize.width - margin
-            let initialY = screenFrame.origin.y + screenFrame.size.height - windowSize.height - margin
+            
+            // Position window below menu bar with small gap
+            let menuBarHeight: CGFloat = 25
+            let gap: CGFloat = 10
+            
+            // Calculate X position (centered)
+            let initialX = screenFrame.origin.x + (screenFrame.size.width - windowSize.width) / 2
+            
+            // Calculate Y position (just below menu bar)
+            let initialY = screenFrame.origin.y + screenFrame.size.height - menuBarHeight - windowSize.height - gap
             
             // Create new settings window with correct initial position
             let settingsView = SettingsView().environmentObject(viewModel)
