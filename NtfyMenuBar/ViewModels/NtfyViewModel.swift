@@ -19,6 +19,9 @@ class NtfyViewModel: ObservableObject {
     private var ntfyService: NtfyService?
     private var cancellables = Set<AnyCancellable>()
     
+    // Closure to open settings window (set by StatusBarController)
+    var openSettingsAction: (() -> Void)?
+    
     init() {
         self.settings = SettingsManager.loadSettings()
         setupService()

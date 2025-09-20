@@ -12,7 +12,7 @@ NtfyMenuBar is a native macOS menu bar application for receiving ntfy.sh notific
 - **Status Bar**: `StatusBarController.swift` - NSStatusItem management with centered dashboard positioning and overflow protection
 - **Models**: Data structures for NtfyMessage and NtfySettings with Codable support
 - **Services**: Server-Sent Events (SSE) via NtfyService using URLSession streaming
-- **ViewModels**: Observable state management with NtfyViewModel using @MainActor
+- **ViewModels**: Observable state management with NtfyViewModel using @MainActor and action closures for StatusBarController integration
 - **Views**: SwiftUI components including ContentView, SettingsView, and MessageRowView
 - **Utilities**: NotificationManager for rich macOS notifications and SettingsManager for Keychain storage
 - **Bundle ID**: `net.raczej.NtfyMenuBar`
@@ -32,10 +32,11 @@ NtfyMenuBar is a native macOS menu bar application for receiving ntfy.sh notific
 - Improved error handling for network timeouts and connection loss
 
 **User Experience:**
-- Borderless dashboard appears directly below menu bar (no gap)
+- Borderless dashboard appears centered below menu bar icon with overflow protection
 - Click-outside-to-close and Escape key support
 - Auto-connect at launch option for seamless experience
 - Rich notifications with priority emojis and interactive actions
+- Integrated settings window management between dashboard and StatusBarController
 
 ## Build and Development Commands
 

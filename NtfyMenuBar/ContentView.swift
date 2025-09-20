@@ -10,7 +10,6 @@ import SwiftUI
 struct ContentView: View {
     @EnvironmentObject var viewModel: NtfyViewModel
     @Environment(\.dismiss) private var dismiss
-    @State private var showingSettings = false
     
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -36,10 +35,6 @@ struct ContentView: View {
             if let window = NSApplication.shared.keyWindow {
                 window.close()
             }
-        }
-        .sheet(isPresented: $showingSettings) {
-            SettingsView()
-                .environmentObject(viewModel)
         }
     }
     
@@ -159,7 +154,7 @@ struct ContentView: View {
         HStack {
             Button("Settings") {
                 print("📱 Settings button pressed")
-                showingSettings = true
+                viewModel.openSettingsAction?()
             }
             
             Spacer()

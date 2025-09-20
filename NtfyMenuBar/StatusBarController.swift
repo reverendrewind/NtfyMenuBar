@@ -27,6 +27,11 @@ class StatusBarController: NSObject, ObservableObject, NSWindowDelegate {
         super.init()
         setupStatusItem()
         setupNotificationObservers()
+        
+        // Set up settings action closure
+        viewModel.openSettingsAction = { [weak self] in
+            self?.openSettings()
+        }
     }
     
     private func setupStatusItem() {

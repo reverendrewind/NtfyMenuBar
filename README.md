@@ -34,7 +34,7 @@ A native macOS menu bar application for [ntfy](https://ntfy.sh) notifications. G
 - Shows server URL and topic in header when connected
 - Connection status indicator (green=connected, red=disconnected, orange=not configured)
 - Real-time message list with empty state when no notifications
-- Settings and connection controls in footer
+- Integrated settings and connection controls in footer with proper window management
 
 *Settings Panel*
 - Server configuration (URL and topic) with validation
