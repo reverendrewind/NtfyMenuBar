@@ -77,22 +77,33 @@ class StatusBarController: NSObject, ObservableObject, NSWindowDelegate {
             // Window exists and is visible, close it (toggle behavior)
             window.close()
         } else {
-            // Calculate position below menu bar
-            guard let screen = NSScreen.main else { return }
-            let screenFrame = screen.frame // Use full frame to position relative to menu bar
             let windowSize = CGSize(width: 350, height: 500)
             
-            // Position window below menu bar with small gap
-            let menuBarHeight: CGFloat = 25 // Standard macOS menu bar height
-            let gap: CGFloat = 10 // Gap between menu bar and window
+            // Try to position relative to the status item button
+            var initialX: CGFloat = 0
+            var initialY: CGFloat = 0
             
-            // Calculate X position (right-aligned with margin)
-            let rightMargin: CGFloat = 20
-            let initialX = screenFrame.origin.x + screenFrame.size.width - windowSize.width - rightMargin
-            
-            // Calculate Y position (just below menu bar)
-            // In macOS, Y=0 is at bottom, so we need to calculate from top
-            let initialY = screenFrame.origin.y + screenFrame.size.height - menuBarHeight - windowSize.height - gap
+            if let button = statusItem?.button,
+               let buttonWindow = button.window {
+                // Get the button's position on screen
+                let buttonRect = buttonWindow.convertToScreen(button.frame)
+                
+                // Position window below the status item
+                initialX = buttonRect.origin.x + buttonRect.width - windowSize.width
+                // Make sure it doesn't go off the left edge of the screen
+                if initialX < 0 {
+                    initialX = buttonRect.origin.x
+                }
+                
+                // Position just below the menu bar
+                initialY = buttonRect.origin.y - windowSize.height - 5
+            } else {
+                // Fallback positioning if we can't get the button position
+                guard let screen = NSScreen.main else { return }
+                let screenFrame = screen.frame
+                initialX = screenFrame.origin.x + screenFrame.size.width - windowSize.width - 20
+                initialY = screenFrame.origin.y + screenFrame.size.height - 30 - windowSize.height
+            }
             
             // Create new window with correct initial position
             let contentView = ContentView().environmentObject(viewModel)
