@@ -19,7 +19,7 @@ class DashboardWindow: NSWindow {
 class StatusBarController: NSObject, ObservableObject, NSWindowDelegate {
     private var statusItem: NSStatusItem?
     let viewModel: NtfyViewModel
-    private var dashboardWindow: NSWindow?
+    private var dashboardPopover: NSPopover?
     private var settingsWindow: NSWindow?
     
     init(viewModel: NtfyViewModel) {
@@ -73,67 +73,28 @@ class StatusBarController: NSObject, ObservableObject, NSWindowDelegate {
     }
     
     private func openDashboard() {
-        if let window = dashboardWindow, window.isVisible {
-            // Window exists and is visible, close it (toggle behavior)
-            window.close()
+        if let popover = dashboardPopover, popover.isShown {
+            // Popover is shown, close it (toggle behavior)
+            popover.close()
         } else {
-            let windowSize = CGSize(width: 350, height: 500)
-            
-            // Try to position relative to the status item button
-            var initialX: CGFloat = 0
-            var initialY: CGFloat = 0
-            
-            // Get position relative to status item button (Stack Overflow solution)
-            if let button = statusItem?.button {
-                // Convert button's bounds to screen coordinates
-                let rectInWindow = button.convert(button.bounds, to: nil)
-                let screenRect = button.window?.convertToScreen(rectInWindow) ?? CGRect.zero
+            // Create popover if it doesn't exist
+            if dashboardPopover == nil {
+                let popover = NSPopover()
+                popover.contentSize = NSSize(width: 350, height: 500)
+                popover.behavior = .transient // Close when clicking outside
+                popover.appearance = NSAppearance(named: .aqua)
                 
-                print("📍 Button screen rect: \(screenRect)")
+                let contentView = ContentView().environmentObject(viewModel)
+                let hostingController = NSHostingController(rootView: contentView)
+                popover.contentViewController = hostingController
                 
-                // Position window below the status item
-                // Center it under the button, or align to right edge
-                initialX = screenRect.origin.x + screenRect.width - windowSize.width
-                
-                // Position below the button - screenRect.origin.y is bottom of button
-                initialY = screenRect.origin.y - windowSize.height - 2
-                
-                print("📍 Calculated position: x=\(initialX), y=\(initialY)")
-            } else {
-                // Fallback if button unavailable
-                guard let screen = NSScreen.main else { return }
-                let screenFrame = screen.frame
-                initialX = screenFrame.maxX - windowSize.width - 20
-                initialY = screenFrame.maxY - 30 - windowSize.height
-                print("📍 Using fallback positioning")
+                dashboardPopover = popover
             }
             
-            // Create new window with correct initial position
-            let contentView = ContentView().environmentObject(viewModel)
-            let hostingController = NSHostingController(rootView: contentView)
-            
-            let window = DashboardWindow(
-                contentRect: NSRect(x: initialX, y: initialY, width: windowSize.width, height: windowSize.height),
-                styleMask: [.borderless, .fullSizeContentView],
-                backing: .buffered,
-                defer: false
-            )
-            // Borderless window - no title needed
-            window.backgroundColor = NSColor.windowBackgroundColor
-            window.isOpaque = true
-            window.hasShadow = true
-            window.contentViewController = hostingController
-            window.isReleasedWhenClosed = false
-            window.delegate = self
-            window.isRestorable = false
-            window.tabbingMode = .disallowed
-            // Make window appear on all spaces/desktops
-            window.collectionBehavior = [.moveToActiveSpace, .transient]
-            window.level = .floating
-            window.makeKeyAndOrderFront(nil)
-            
-            // Keep reference to window
-            dashboardWindow = window
+            // Show popover relative to status item button
+            if let button = statusItem?.button {
+                dashboardPopover?.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
+            }
         }
     }
     
@@ -374,21 +335,16 @@ class StatusBarController: NSObject, ObservableObject, NSWindowDelegate {
         if let window = notification.object as? NSWindow {
             window.delegate = nil
             
-            // Determine which window is closing and clear the reference
-            if window === dashboardWindow {
-                dashboardWindow = nil
-            } else if window === settingsWindow {
+            // Only handle settings window now - dashboard is a popover
+            if window === settingsWindow {
                 settingsWindow = nil
             }
         }
     }
     
     func windowDidResignKey(_ notification: Notification) {
-        // Close dashboard when it loses focus (click outside)
-        if let window = notification.object as? NSWindow,
-           window === dashboardWindow {
-            window.close()
-        }
+        // Only handle settings window now, popover handles itself
+        // Popover automatically closes when clicking outside due to .transient behavior
     }
     
     deinit {
