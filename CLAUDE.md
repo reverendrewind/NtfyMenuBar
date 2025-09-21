@@ -10,11 +10,11 @@ NtfyMenuBar is a native macOS menu bar application for receiving ntfy.sh notific
 
 - **Main App**: `NtfyMenuBar/NtfyMenuBarApp.swift` - SwiftUI app with AppDelegate for status bar control
 - **Status Bar**: `StatusBarController.swift` - NSStatusItem management with centered dashboard positioning and overflow protection
-- **Models**: Data structures for NtfyMessage, NtfySettings, and NtfyUser with Codable support
-- **Services**: Server-Sent Events (SSE) via NtfyService using URLSession streaming, UserManagementService for admin operations
+- **Models**: Data structures for NtfyMessage and NtfySettings with Codable support
+- **Services**: Server-Sent Events (SSE) via NtfyService using URLSession streaming
 - **ViewModels**: Observable state management with NtfyViewModel using @MainActor and action closures for StatusBarController integration
-- **Views**: SwiftUI components including ContentView, SettingsView, MessageRowView, UserManagementView, and CreateUserSheet
-- **Utilities**: NotificationManager for rich macOS notifications, SettingsManager for Keychain storage, and ThemeManager for dark mode support
+- **Views**: SwiftUI components including ContentView, SettingsView, and MessageRowView
+- **Utilities**: NotificationManager for rich macOS notifications, SettingsManager for Keychain storage, ThemeManager for dark mode support, and SnoozeDuration for notification snoozing
 - **Bundle ID**: `net.raczej.NtfyMenuBar`
 
 ### Key Design Decisions
@@ -38,104 +38,71 @@ NtfyMenuBar is a native macOS menu bar application for receiving ntfy.sh notific
 - Rich notifications with priority emojis and interactive actions
 - Dark mode support with Light/Dark/System appearance options
 - Integrated settings window management between dashboard and StatusBarController
-- Comprehensive user management with role-based permissions and admin features
+- Notification snoozing system with 8 preset durations and custom branded icon
 
-## Build and Development Commands
+## Development Environment
 
-Since this is an Xcode project, development requires Xcode:
-
-```bash
-# Open project in Xcode
-open NtfyMenuBar.xcodeproj
-
-# Build from command line (requires Xcode, not just command line tools)
-xcodebuild -scheme NtfyMenuBar -configuration Debug build
-
-# Run tests
-xcodebuild test -scheme NtfyMenuBar -destination 'platform=macOS'
-
-# Run specific test targets
-xcodebuild test -scheme NtfyMenuBarTests -destination 'platform=macOS'
-xcodebuild test -scheme NtfyMenuBarUITests -destination 'platform=macOS'
-```
+Requires Xcode 14.0+ for development. See README.md for detailed build instructions.
 
 ## Key Configuration
 
-- **Deployment Target**: macOS 15.6
-- **Swift Version**: 5.0
+- **Deployment Target**: macOS 14.0+ (Sonoma)
+- **Swift Version**: 6.0
 - **App Sandbox**: Enabled with network client entitlement
 - **SwiftUI Previews**: Enabled
 - **Code Signing**: Automatic
 - **LSUIElement**: Should be set to YES in Info.plist (hides from Dock)
-- **Modern Swift Features**: 
-  - Swift Approachable Concurrency enabled
+- **Modern Swift Features**:
+  - Swift 6 Concurrency enabled with strict checking
   - Main Actor isolation by default
+  - Enhanced sendability and isolation checking
   - Member import visibility upcoming feature enabled
 
-## Planned Architecture (from ntfy-plan.md)
-
-The project follows a structured approach with clear separation of concerns:
-
-### Core Components
-- **WebSocket Service**: Real-time connection to ntfy server with authentication
-- **Notification Manager**: Native macOS notification handling
-- **Settings Management**: UserDefaults-based persistence
-- **MenuBar Integration**: MenuBarExtra with dynamic icon states
-
-### Key Features
-- Real-time WebSocket connections with auto-reconnection
-- Basic authentication support
-- Native macOS notifications with permission handling
-- Recent message display with configurable limits
-- Connection status indicators
-- Settings configuration interface
-
 ### Required Entitlements
-- `com.apple.security.network.client` for WebSocket connections
+- `com.apple.security.network.client` for Server-Sent Events (SSE) connections
 - `com.apple.security.app-sandbox` for app sandbox
+- User notification permissions for native macOS notifications
 
 ## Development Notes
 
-### Recent Major Changes
-- **SSE Implementation**: Migrated from WebSocket to Server-Sent Events for better ntfy compatibility
-- **Menu Bar Positioning**: Implemented proper positioning using screen.visibleFrame coordinates
-- **Auto-connect**: Added launch-time connection with user preference toggle
-- **Enhanced Notifications**: Rich notifications with priority indicators and interactive actions
-- **Connection Stability**: Improved reconnection logic and keepalive timers
-- **Multi-Desktop Support**: Windows now appear on current desktop, not launch desktop
-- **User Management Removal**: Removed user management feature - ntfy only supports CLI-based user management, no HTTP API available
-- **Multiple Topics Support**: Full support for subscribing to multiple topics simultaneously with topic badges in message display
-- **Network Monitoring**: Comprehensive network change detection with automatic reconnection on network restoration
-- **Message Filtering**: Real-time search and filtering by text, priority, and topic with keyboard shortcuts
-- **Fallback Servers**: Automatic failover to backup servers with configurable retry delays
-- **UI Text Standardization**: Converted all interface text from Title Case to sentence case following modern UI guidelines
-- **Interface Cleanup**: Removed redundant text elements for cleaner, more professional appearance
-- **Access Token Management**: Complete implementation of personal access token generation and management via ntfy HTTP API
+### Current Implementation Status
+See [CHANGELOG.md](CHANGELOG.md) for complete version history and feature progression.
+
+**Current v2.4.0 Features:**
+- **Notification Snoozing**: Comprehensive snoozing system with 8 preset durations and custom branded icon
+- **SSE Connection**: Server-Sent Events for real-time notifications (migrated from WebSocket)
+- **Multi-Desktop Support**: Dashboard appears on current desktop with proper positioning
+- **Message Filtering & Grouping**: Advanced filtering by topic/priority with search functionality
+- **Access Token Management**: Complete token generation and management via ntfy HTTP API
+- **Dark Mode**: Full Light/Dark/System appearance support
 
 ### Technical Implementation Details
-- **Window Positioning**: Uses `visibleFrame.maxY - windowHeight` for placement below menu bar
-- **Borderless Windows**: Custom DashboardWindow class overrides canBecomeKey for proper focus
-- **SSE Streaming**: URLSession.bytes(for:) with AsyncSequence for real-time message processing
-- **Keychain Storage**: Secure credential storage using Keychain Services API
-- **State Management**: @MainActor isolation with Combine publishers for reactive UI updates
+- **Window Positioning**: Uses `visibleFrame.maxY - windowHeight` for placement below menu bar with overflow protection
+- **Borderless Windows**: Custom DashboardWindow class overrides canBecomeKey for proper focus and click-outside-to-close
+- **SSE Streaming**: URLSession.bytes(for:) with AsyncSequence for real-time message processing and auto-reconnection
+- **Keychain Storage**: Secure credential storage using Keychain Services API for both Basic Auth and access tokens
+- **State Management**: @MainActor isolation with Combine publishers for reactive UI updates and Swift 6 compatibility
 - **Notification Categories**: UNNotificationCategory with interactive actions (Open, Mark Read, Dismiss)
-- **Multiple Topics**: Comma-separated topic URLs (`/topic1,topic2,topic3/json`) for simultaneous subscriptions with topic badges in UI
-- **Access Token API**: POST to `/v1/account/token` with optional label and expiration parameters
-- **Token Security**: Masked display format (tk_XXXX•••••XXXX) with one-time full display and clipboard integration
+- **Snooze System**: SnoozeDuration enum with 8 presets, real-time countdown, and custom branded menu bar icon switching
+- **Access Token API**: POST to `/v1/account/token` with secure clipboard integration and masked display format
+- **Message Filtering**: Real-time search and multi-selection filtering with dropdown UI components
 
-### Known Patterns
+### Development Patterns
 - **Window Delegate**: Uses windowDidResignKey for click-outside-to-close behavior
 - **Task Management**: Async/await patterns with proper error handling and cancellation
 - **Memory Management**: Weak self references in timers and closures to prevent retain cycles
 - **Settings Persistence**: Codable structs with UserDefaults and separate Keychain credential storage
+- **Timer Management**: Proper snooze countdown with @MainActor isolation and automatic cleanup
 
-### ntfy API Limitations
-- **User Management**: ntfy only provides CLI-based user management (`sudo ntfy user ...` commands). No HTTP API endpoints exist for admin user operations.
-- **Available HTTP APIs**: Only self-service account management endpoints (`/v1/account/*`) for logged-in users to manage their own accounts.
-- **Server Requirements**: Account features require `enable-login: true` in server configuration.
+### ntfy API Limitations & Constraints
+- **User Management**: ntfy only provides CLI-based user management (`sudo ntfy user ...` commands). No HTTP API endpoints exist for admin operations.
+- **Message History**: No persistent message history API - messages are only available via real-time SSE connection
+- **Topic Statistics**: No API for subscriber counts, message counts, or topic analytics
+- **Server Configuration**: No HTTP API for server settings or configuration management
+- **Available APIs**: Limited to self-service account management (`/v1/account/*`) and message publishing
 
-### Testing
-- App sandbox is enabled, restricting file system access but allowing network connections
-- Uses modern Swift concurrency patterns with MainActor isolation
-- Notification permissions are requested on first launch
-- Works across multiple desktops/Spaces with proper window collection behavior
+### Testing & Deployment
+- **App Sandbox**: Enabled, restricting file system access but allowing network connections
+- **Swift Concurrency**: Uses modern async/await patterns with MainActor isolation for Swift 6 compatibility
+- **Notification Permissions**: Requested on first launch with proper error handling
+- **Multi-Desktop Support**: Works across Spaces with proper window collection behavior
