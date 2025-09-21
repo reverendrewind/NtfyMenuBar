@@ -82,13 +82,14 @@ class StatusBarController: NSObject, ObservableObject, NSWindowDelegate {
 
         // Set the appropriate icon based on snooze state
         if viewModel.isSnoozed {
-            // Use bell.slash for snoozed state
-            let image = NSImage(systemSymbolName: "bell.slash.fill", accessibilityDescription: "Notifications snoozed")
-            image?.isTemplate = true
-            button.image = image
-            button.toolTip = "Notifications snoozed - \(viewModel.snoozeStatusText)"
+            // Use custom snooze icon (grayed-out ntfy bell with slash/ZZZ)
+            if let image = NSImage(named: "MenuBarIconSnooze") {
+                image.isTemplate = true
+                button.image = image
+                button.toolTip = "Notifications snoozed - \(viewModel.snoozeStatusText)"
+            }
         } else {
-            // Use normal bell icon
+            // Use normal ntfy bell icon
             if let image = NSImage(named: "MenuBarIcon") {
                 image.isTemplate = true
                 button.image = image

@@ -24,7 +24,7 @@ A native macOS menu bar application for [ntfy](https://ntfy.sh) notifications. G
 - **Smart Filtering**: Multi-selection filters for topics and priorities with dropdown interface
 - **Message Grouping**: Organize messages by topic or priority with collapsible sections
 - **Powerful Search**: Search across message content, titles, topics, and tags
-- **Notification Snoozing**: Temporarily silence notifications with 8 preset durations or custom timing
+- **Notification Snoozing**: Temporarily silence notifications with 8 preset durations and custom branded snooze icon
 - **Access Token Management**: Generate and manage ntfy access tokens directly from the app
 - **Customizable Settings**: Configure notification preferences, message limits, appearance, and auto-connect
 - **Connection Stability**: Improved SSE handling with auto-reconnect and keepalive timers
@@ -178,7 +178,7 @@ Temporarily silence notifications while still receiving and displaying messages 
 **Snooze Controls:**
 - **Dashboard**: Bell icon in header with dropdown menu and status bar
 - **Menu Bar**: Right-click context menu with snooze submenu
-- **Visual Feedback**: Menu bar icon changes to bell.slash when snoozed
+- **Custom Visual Feedback**: Menu bar icon changes to grayed-out ntfy bell with diagonal slash when snoozed
 - **Real-time Countdown**: Live display of remaining snooze time
 - **Auto-expiration**: Snooze automatically clears when time expires
 - **Quick Clear**: One-click snooze cancellation from dashboard or menu
@@ -542,6 +542,10 @@ curl -X POST https://your-ntfy-server.com/your-topic \
   - Real-time countdown display and auto-expiration
   - Dashboard and menu bar controls with visual feedback
   - Snooze state persistence across app restarts
+- ✅ **Custom snooze icon implementation**
+  - Branded grayed-out ntfy bell with diagonal slash for snooze state
+  - Multi-resolution support (1x, 2x, 3x) for crisp display
+  - Maintains brand consistency while clearly indicating muted state
 - ✅ **Fixed dashboard header display**
   - Now shows actual server URL instead of "Primary server"
   - Improved server identification in multi-server setups
