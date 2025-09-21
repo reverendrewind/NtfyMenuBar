@@ -55,6 +55,13 @@ struct SettingsView: View {
     @State private var showingClearArchiveAlert: Bool = false
     @State private var archiveClearDays: Int = 30
 
+    // Archive browser state
+    @State private var archivedMessages: [NtfyMessage] = []
+    @State private var isLoadingArchive: Bool = false
+    @State private var showingArchiveBrowser: Bool = false
+    @State private var archiveSearchText: String = ""
+    @State private var selectedArchiveTopic: String = "All"
+
     enum SettingsTab: String, CaseIterable {
         case connection = "Connection"
         case tokens = "Access tokens"
@@ -801,6 +808,117 @@ struct SettingsView: View {
             Divider()
 
             VStack(alignment: .leading, spacing: 12) {
+                Text("Browse Archived Messages")
+                    .font(.headline)
+
+                Text("View and search through your archived message history.")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+
+                HStack {
+                    Button(showingArchiveBrowser ? "Hide Archive Browser" : "Show Archive Browser") {
+                        showingArchiveBrowser.toggle()
+                        if showingArchiveBrowser && archivedMessages.isEmpty {
+                            loadArchivedMessages()
+                        }
+                    }
+                    .buttonStyle(.borderedProminent)
+
+                    if showingArchiveBrowser {
+                        Button("Load Recent (7 days)") {
+                            loadRecentArchivedMessages()
+                        }
+                        .buttonStyle(.bordered)
+                        .font(.caption)
+
+                        Button("Load All") {
+                            loadArchivedMessages()
+                        }
+                        .buttonStyle(.bordered)
+                        .font(.caption)
+                    }
+
+                    if showingArchiveBrowser && !archivedMessages.isEmpty {
+                        Spacer()
+                        Text("\(filteredArchivedMessages.count) of \(archivedMessages.count) messages")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                }
+
+                if showingArchiveBrowser {
+                    if isLoadingArchive {
+                        HStack {
+                            ProgressView()
+                                .scaleEffect(0.8)
+                            Text("Loading archived messages...")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                        .padding(.vertical, 20)
+                    } else if !archivedMessages.isEmpty {
+                        VStack(spacing: 12) {
+                            // Search and filter controls
+                            HStack(spacing: 12) {
+                                HStack {
+                                    Image(systemName: "magnifyingglass")
+                                        .font(.system(size: 12))
+                                        .foregroundColor(.secondary)
+                                    TextField("Search messages...", text: $archiveSearchText)
+                                        .textFieldStyle(.plain)
+                                        .font(.caption)
+                                }
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 6)
+                                .background(Color.secondary.opacity(0.1))
+                                .cornerRadius(6)
+
+                                Picker("Topic", selection: $selectedArchiveTopic) {
+                                    Text("All Topics").tag("All")
+                                    ForEach(archiveTopics, id: \.self) { topic in
+                                        Text(topic).tag(topic)
+                                    }
+                                }
+                                .pickerStyle(.menu)
+                                .frame(width: 120)
+                            }
+
+                            // Message list
+                            ScrollView {
+                                LazyVStack(spacing: 4) {
+                                    ForEach(filteredArchivedMessages.prefix(100), id: \.uniqueId) { message in
+                                        ArchiveMessageRowView(message: message)
+                                    }
+
+                                    if filteredArchivedMessages.count > 100 {
+                                        Text("Showing first 100 messages. Use search to narrow results.")
+                                            .font(.caption)
+                                            .foregroundColor(.secondary)
+                                            .padding(.vertical, 8)
+                                    }
+                                }
+                            }
+                            .frame(height: 300)
+                            .background(Color.secondary.opacity(0.05))
+                            .cornerRadius(8)
+                        }
+                    } else {
+                        VStack(spacing: 8) {
+                            Image(systemName: "archivebox")
+                                .font(.title2)
+                                .foregroundColor(.secondary)
+                            Text("No archived messages found")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                        .padding(.vertical, 20)
+                    }
+                }
+            }
+
+            Divider()
+
+            VStack(alignment: .leading, spacing: 12) {
                 Text("Export Messages")
                     .font(.headline)
 
@@ -1173,6 +1291,56 @@ struct SettingsView: View {
         }
     }
 
+    private func loadArchivedMessages() {
+        isLoadingArchive = true
+        Task {
+            let messages = await viewModel.loadAllArchivedMessages()
+            await MainActor.run {
+                self.archivedMessages = messages
+                self.isLoadingArchive = false
+            }
+        }
+    }
+
+    private func loadRecentArchivedMessages() {
+        isLoadingArchive = true
+        Task {
+            let weekAgo = Date().addingTimeInterval(-7 * 24 * 60 * 60)
+            let recentMessages = await MessageArchive.shared.getArchivedMessages(since: weekAgo)
+            await MainActor.run {
+                self.archivedMessages = recentMessages
+                self.isLoadingArchive = false
+            }
+        }
+    }
+
+    private var archiveTopics: [String] {
+        let allTopics = Set(archivedMessages.map { $0.topic })
+        return Array(allTopics).sorted()
+    }
+
+    private var filteredArchivedMessages: [NtfyMessage] {
+        var messages = archivedMessages
+
+        // Apply search filter
+        if !archiveSearchText.isEmpty {
+            let searchLower = archiveSearchText.lowercased()
+            messages = messages.filter { message in
+                (message.message?.lowercased().contains(searchLower) ?? false) ||
+                (message.title?.lowercased().contains(searchLower) ?? false) ||
+                message.topic.lowercased().contains(searchLower) ||
+                (message.tags?.joined(separator: " ").lowercased().contains(searchLower) ?? false)
+            }
+        }
+
+        // Apply topic filter
+        if selectedArchiveTopic != "All" {
+            messages = messages.filter { $0.topic == selectedArchiveTopic }
+        }
+
+        return messages
+    }
+
     private func clearOldArchivedMessages() {
         viewModel.clearOldArchivedMessages(olderThan: archiveClearDays)
         // Refresh statistics after clearing
@@ -1254,6 +1422,102 @@ struct SettingsView: View {
             alert.alertStyle = .critical
             alert.addButton(withTitle: "OK")
             alert.runModal()
+        }
+    }
+}
+
+struct ArchiveMessageRowView: View {
+    let message: NtfyMessage
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 12) {
+            // Priority and timestamp column
+            VStack(alignment: .leading, spacing: 2) {
+                Text(priorityEmoji)
+                    .font(.caption)
+
+                Text(message.date, style: .relative)
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
+                    .lineLimit(1)
+            }
+            .frame(width: 60, alignment: .leading)
+
+            // Main content
+            VStack(alignment: .leading, spacing: 4) {
+                HStack {
+                    Text(message.topic)
+                        .font(.caption)
+                        .fontWeight(.medium)
+                        .foregroundColor(.blue)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(Color.blue.opacity(0.1))
+                        .cornerRadius(4)
+
+                    if let title = message.title, !title.isEmpty {
+                        Text(title)
+                            .font(.caption)
+                            .fontWeight(.medium)
+                            .lineLimit(1)
+                    }
+
+                    Spacer()
+
+                    Text(message.date, style: .time)
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                }
+
+                if let messageText = message.message, !messageText.isEmpty {
+                    Text(messageText)
+                        .font(.caption)
+                        .foregroundColor(.primary)
+                        .lineLimit(2)
+                        .multilineTextAlignment(.leading)
+                }
+
+                if let tags = message.tags, !tags.isEmpty {
+                    HStack(spacing: 4) {
+                        ForEach(tags.prefix(3), id: \.self) { tag in
+                            Text("#\(tag)")
+                                .font(.caption2)
+                                .foregroundColor(.secondary)
+                                .padding(.horizontal, 4)
+                                .padding(.vertical, 1)
+                                .background(Color.secondary.opacity(0.1))
+                                .cornerRadius(3)
+                        }
+                        if tags.count > 3 {
+                            Text("+\(tags.count - 3)")
+                                .font(.caption2)
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                }
+            }
+        }
+        .padding(.horizontal, 8)
+        .padding(.vertical, 6)
+        .background(Color.clear)
+        .cornerRadius(6)
+        .overlay(
+            Rectangle()
+                .frame(height: 1)
+                .foregroundColor(Color.secondary.opacity(0.2))
+                .offset(y: 20),
+            alignment: .bottom
+        )
+    }
+
+    private var priorityEmoji: String {
+        switch message.priority ?? 3 {
+        case 5: return "🔴"
+        case 4: return "🟠"
+        case 3: return "🟡"
+        case 2: return "🔵"
+        case 1: return "⚪"
+        default: return "🟡"
         }
     }
 }
