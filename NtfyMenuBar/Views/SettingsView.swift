@@ -42,10 +42,17 @@ struct SettingsView: View {
     @State private var generatedToken: String?
     @State private var tokenError: String?
 
+    // Do Not Disturb scheduling state
+    @State private var isDNDScheduleEnabled: Bool = false
+    @State private var dndStartTime: Date = Date()
+    @State private var dndEndTime: Date = Date()
+    @State private var dndDaysOfWeek: Set<Int> = Set([1, 2, 3, 4, 5, 6, 7])
+
     enum SettingsTab: String, CaseIterable {
         case connection = "Connection"
         case tokens = "Access tokens"
         case fallbacks = "Fallback servers"
+        case dnd = "Do Not Disturb"
         case preferences = "Preferences"
 
         var systemImage: String {
@@ -53,6 +60,7 @@ struct SettingsView: View {
             case .connection: return "network"
             case .tokens: return "key.fill"
             case .fallbacks: return "server.rack"
+            case .dnd: return "moon.zzz"
             case .preferences: return "gearshape"
             }
         }
@@ -84,6 +92,8 @@ struct SettingsView: View {
                         accessTokensView
                     case .fallbacks:
                         fallbackServersView
+                    case .dnd:
+                        dndSettingsView
                     case .preferences:
                         preferencesSettingsView
                     }
@@ -446,6 +456,89 @@ struct SettingsView: View {
         }
     }
 
+    private var dndSettingsView: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            VStack(alignment: .leading, spacing: 12) {
+                Text("Do Not Disturb schedule")
+                    .font(.headline)
+
+                Toggle("Enable scheduled Do Not Disturb", isOn: $isDNDScheduleEnabled)
+                    .help("Automatically block notifications during specified hours")
+
+                if isDNDScheduleEnabled {
+                    VStack(alignment: .leading, spacing: 16) {
+                        // Time configuration
+                        HStack {
+                            VStack(alignment: .leading) {
+                                Text("Start time")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                                DatePicker("", selection: $dndStartTime, displayedComponents: .hourAndMinute)
+                                    .labelsHidden()
+                            }
+
+                            Spacer()
+
+                            VStack(alignment: .leading) {
+                                Text("End time")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                                DatePicker("", selection: $dndEndTime, displayedComponents: .hourAndMinute)
+                                    .labelsHidden()
+                            }
+                        }
+
+                        // Days of week selection
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Active days")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+
+                            HStack(spacing: 8) {
+                                ForEach(1...7, id: \.self) { day in
+                                    let dayName = Calendar.current.shortWeekdaySymbols[day == 1 ? 6 : day - 2]
+
+                                    Button(action: {
+                                        if dndDaysOfWeek.contains(day) {
+                                            dndDaysOfWeek.remove(day)
+                                        } else {
+                                            dndDaysOfWeek.insert(day)
+                                        }
+                                    }) {
+                                        Text(dayName)
+                                            .font(.caption)
+                                            .frame(width: 28, height: 28)
+                                            .background(
+                                                Circle()
+                                                    .fill(dndDaysOfWeek.contains(day) ? Color.accentColor : Color.secondary.opacity(0.2))
+                                            )
+                                            .foregroundColor(dndDaysOfWeek.contains(day) ? .white : .primary)
+                                    }
+                                    .buttonStyle(.plain)
+                                }
+                            }
+                        }
+
+                        // Status display
+                        if viewModel.settings.isCurrentlyInDND {
+                            HStack {
+                                Image(systemName: "moon.zzz.fill")
+                                    .foregroundColor(.orange)
+                                Text("Do Not Disturb is currently active")
+                                    .font(.caption)
+                                    .foregroundColor(.orange)
+                            }
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
+                            .background(Color.orange.opacity(0.1))
+                            .cornerRadius(6)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     private var accessTokensView: some View {
         VStack(alignment: .leading, spacing: 20) {
             VStack(alignment: .leading, spacing: 12) {
@@ -758,6 +851,12 @@ struct SettingsView: View {
         enableFallbackServers = settings.enableFallbackServers
         fallbackRetryDelay = settings.fallbackRetryDelay
 
+        // Load DND settings
+        isDNDScheduleEnabled = settings.isDNDScheduleEnabled
+        dndStartTime = settings.dndStartTime
+        dndEndTime = settings.dndEndTime
+        dndDaysOfWeek = settings.dndDaysOfWeek
+
         if !username.isEmpty {
             password = SettingsManager.loadPassword(for: username) ?? ""
         }
@@ -781,6 +880,12 @@ struct SettingsView: View {
         )
         settings.topics = topics
         settings.fallbackServers = fallbackServers
+
+        // Save DND settings
+        settings.isDNDScheduleEnabled = isDNDScheduleEnabled
+        settings.dndStartTime = dndStartTime
+        settings.dndEndTime = dndEndTime
+        settings.dndDaysOfWeek = dndDaysOfWeek
 
         SettingsManager.saveSettings(settings)
 

@@ -37,9 +37,10 @@ class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
     }
     
     func showNotification(for message: NtfyMessage, settings: NtfySettings = SettingsManager.loadSettings()) {
-        // Check if notifications are snoozed
-        if settings.isCurrentlySnoozed {
-            print("🔕 Notification skipped due to snooze mode: \(message.displayTitle)")
+        // Check if notifications should be blocked (snooze or DND)
+        if settings.shouldBlockNotifications {
+            let reason = settings.isCurrentlySnoozed ? "snooze mode" : "Do Not Disturb schedule"
+            print("🔕 Notification skipped due to \(reason): \(message.displayTitle)")
             return
         }
 

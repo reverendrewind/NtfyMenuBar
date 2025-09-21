@@ -219,10 +219,55 @@ struct NtfySettings: Codable, Equatable {
     var snoozeEndTime: Date?
     var defaultSnoozeDuration: SnoozeDuration = .thirtyMinutes
 
+    // Do Not Disturb scheduling settings
+    var isDNDScheduleEnabled: Bool = false
+    var dndStartTime: Date = Calendar.current.date(bySettingHour: 22, minute: 0, second: 0, of: Date()) ?? Date()
+    var dndEndTime: Date = Calendar.current.date(bySettingHour: 8, minute: 0, second: 0, of: Date()) ?? Date()
+    var dndDaysOfWeek: Set<Int> = Set([1, 2, 3, 4, 5, 6, 7]) // Sunday = 1, Monday = 2, etc.
+
     // Computed property to check if notifications are currently snoozed
     var isCurrentlySnoozed: Bool {
         guard isSnoozed, let endTime = snoozeEndTime else { return false }
         return Date() < endTime
+    }
+
+    // Computed property to check if we're currently in Do Not Disturb time
+    var isCurrentlyInDND: Bool {
+        guard isDNDScheduleEnabled else { return false }
+
+        let now = Date()
+        let calendar = Calendar.current
+        let currentWeekday = calendar.component(.weekday, from: now)
+
+        // Check if today is enabled for DND
+        guard dndDaysOfWeek.contains(currentWeekday) else { return false }
+
+        let currentTime = calendar.dateComponents([.hour, .minute], from: now)
+        let startTime = calendar.dateComponents([.hour, .minute], from: dndStartTime)
+        let endTime = calendar.dateComponents([.hour, .minute], from: dndEndTime)
+
+        guard let currentHour = currentTime.hour,
+              let currentMinute = currentTime.minute,
+              let startHour = startTime.hour,
+              let startMinute = startTime.minute,
+              let endHour = endTime.hour,
+              let endMinute = endTime.minute else { return false }
+
+        let currentMinutes = currentHour * 60 + currentMinute
+        let startMinutes = startHour * 60 + startMinute
+        let endMinutes = endHour * 60 + endMinute
+
+        // Handle overnight DND (e.g., 22:00 to 08:00)
+        if startMinutes > endMinutes {
+            return currentMinutes >= startMinutes || currentMinutes < endMinutes
+        } else {
+            return currentMinutes >= startMinutes && currentMinutes < endMinutes
+        }
+    }
+
+    // Check if notifications should be blocked (either snoozed or in DND)
+    var shouldBlockNotifications: Bool {
+        return isCurrentlySnoozed || isCurrentlyInDND
     }
 
     // Time remaining in snooze
