@@ -534,45 +534,15 @@ curl -X POST https://your-ntfy-server.com/your-topic \
 - **ntfy Documentation**: [ntfy.sh/docs](https://ntfy.sh/docs)
 - **Proxmox VE Notifications**: [PVE Docs](https://pve.proxmox.com/pve-docs/chapter-notifications.html)
 
-## Recent Changes
+## Changelog
 
-### v2.4.0 - Notification Snoozing & Bug Fixes
-- ✅ **Added comprehensive notification snoozing system**
-  - 8 preset durations: 5min, 15min, 30min, 1hr, 2hr, 4hr, 8hr, "Until tomorrow"
-  - Real-time countdown display and auto-expiration
-  - Dashboard and menu bar controls with visual feedback
-  - Snooze state persistence across app restarts
-- ✅ **Custom snooze icon implementation**
-  - Branded grayed-out ntfy bell with diagonal slash for snooze state
-  - Multi-resolution support (1x, 2x, 3x) for crisp display
-  - Maintains brand consistency while clearly indicating muted state
-- ✅ **Fixed dashboard header display**
-  - Now shows actual server URL instead of "Primary server"
-  - Improved server identification in multi-server setups
-- ✅ **Fixed snooze functionality**
-  - Resolved issue where notifications continued during snooze
-  - Proper settings synchronization between components
-- ✅ **Enhanced Swift 6 compatibility**
-  - Fixed concurrency warnings and actor isolation issues
-  - Improved timer management for snooze countdown
-- ✅ **Fixed snooze countdown display**
-  - Now properly rounds to nearest minute for accurate time display
-  - Resolved misleading countdown (e.g., 4:59 now correctly shows "5m" instead of "4m")
-- ✅ **Improved snooze icon visibility**
-  - Updated diagonal slash to be more muted and cohesive with grayed-out bell icon
-  - Enhanced visual consistency in menu bar snooze state
+For a complete list of changes, new features, and bug fixes, see [CHANGELOG.md](CHANGELOG.md).
 
-### v2.3.0 - Message Filtering & Grouping
-- ✅ **Advanced message filtering system**
-  - Multi-selection filters for topics and priorities
-  - Compact dropdown menus replace large filter panels
-  - Comprehensive search across content, titles, topics, and tags
-- ✅ **Message grouping with collapsible sections**
-  - Group by topic or priority with visual indicators
-  - Expand/collapse functionality for better organization
-- ✅ **Improved message layout density**
-  - Reduced spacing between messages for better space utilization
-  - Maintained readability while maximizing content display
+### Latest Release - v2.4.0
+- 🔕 **Notification Snoozing**: Comprehensive snoozing system with 8 preset durations
+- 🎨 **Custom Snooze Icon**: Branded grayed-out bell with diagonal slash
+- 🐛 **Bug Fixes**: Dashboard header display, snooze functionality, and countdown accuracy
+- ⚡ **Performance**: Enhanced Swift 6 compatibility and improved timer management
 
 ## Acknowledgments
 
