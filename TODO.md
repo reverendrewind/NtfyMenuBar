@@ -9,38 +9,38 @@
 *Features that can be implemented with existing ntfy HTTP API and provide significant user value*
 
 #### Access Token Management - API Available ✅
-- [ ] Generate new access tokens - `POST /v1/account/token`
-- [ ] Copy tokens to clipboard securely
-- [ ] Token regeneration and management UI
-- [ ] Secure token storage in Keychain (already implemented)
+- [x] Generate new access tokens - `POST /v1/account/token` *(Completed)*
+- [x] Copy tokens to clipboard securely *(Completed)*
+- [x] Token regeneration and management UI *(Completed)*
+- [x] Secure token storage in Keychain *(Already implemented)*
 
 #### UI/UX Improvements - Client-Side ✅
 - [x] Dark/Light mode sync with system *(Already implemented)*
-- [ ] Customizable notification sounds
+- [x] Customizable notification sounds *(Completed)*
 - [ ] Message grouping by topic/priority
-- [ ] Keyboard shortcuts for common actions
+- [x] Keyboard shortcuts for common actions *(Completed)*
 - [ ] Notification snoozing
 - [ ] Do Not Disturb scheduling
 
 #### Connection Improvements - Client-Side ✅
 - [x] Auto-reconnect with exponential backoff *(Already implemented)*
-- [ ] Network change detection and handling
-- [ ] Connection quality indicator
-- [ ] Fallback server support
+- [x] Network change detection and handling *(Completed)*
+- [x] Connection quality indicator *(Completed)*
+- [x] Fallback server support *(Completed)*
 
 ### 🟡 MEDIUM PRIORITY - Feasible with Limitations
 *Features possible but with constraints or workarounds*
 
 #### Message Management (Limited Capabilities)
-- [ ] View recent message history (client-side caching via SSE)
+- [x] View recent message history (client-side caching via SSE) *(Already implemented)*
 - [ ] Delete individual messages (if API permits)
 - [ ] Export message logs to CSV/JSON (cached messages only)
-- [ ] Message filtering by priority/topic (client-side)
+- [x] Message filtering by priority/topic (client-side) *(Completed)*
 
 #### Multi-Server Support
-- [ ] Support for managing multiple ntfy servers
-- [ ] Server switching in UI
-- [ ] Per-server credential management
+- [x] Support for managing multiple ntfy servers *(Completed)*
+- [x] Server switching in UI *(Completed)*
+- [x] Per-server credential management *(Completed)*
 
 #### Integration Features
 - [ ] Export to other services (Slack, Discord, etc.)

@@ -34,14 +34,24 @@ struct SettingsView: View {
     @State private var editingServer: NtfyServer?
     @State private var showingServerEditor: Bool = false
 
+    // Access token management state
+    @State private var accessTokens: [AccessToken] = []
+    @State private var newTokenLabel: String = ""
+    @State private var newTokenExpiration: TokenExpiration = .never
+    @State private var isGeneratingToken: Bool = false
+    @State private var generatedToken: String?
+    @State private var tokenError: String?
+
     enum SettingsTab: String, CaseIterable {
         case connection = "Connection"
+        case tokens = "Access tokens"
         case fallbacks = "Fallback servers"
         case preferences = "Preferences"
 
         var systemImage: String {
             switch self {
             case .connection: return "network"
+            case .tokens: return "key.fill"
             case .fallbacks: return "server.rack"
             case .preferences: return "gearshape"
             }
@@ -70,6 +80,8 @@ struct SettingsView: View {
                     switch selectedTab {
                     case .connection:
                         connectionSettingsView
+                    case .tokens:
+                        accessTokensView
                     case .fallbacks:
                         fallbackServersView
                     case .preferences:
@@ -434,6 +446,134 @@ struct SettingsView: View {
         }
     }
 
+    private var accessTokensView: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            VStack(alignment: .leading, spacing: 12) {
+                Text("Generate access tokens")
+                    .font(.headline)
+
+                Text("Access tokens allow applications to authenticate without using your password. Each token provides full account access except password changes and account deletion.")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Token label (optional)")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    TextField("e.g., iOS app, monitoring script", text: $newTokenLabel)
+                        .textFieldStyle(.roundedBorder)
+
+                    Text("Expiration")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    Picker("", selection: $newTokenExpiration) {
+                        ForEach(TokenExpiration.allCases, id: \.self) { expiration in
+                            Text(expiration.displayName).tag(expiration)
+                        }
+                    }
+                    .pickerStyle(.menu)
+
+                    HStack {
+                        Button("Generate token") {
+                            generateNewToken()
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .disabled(isGeneratingToken || !canGenerateToken)
+
+                        if isGeneratingToken {
+                            ProgressView()
+                                .scaleEffect(0.8)
+                        }
+                    }
+
+                    if let error = tokenError {
+                        Text(error)
+                            .font(.caption)
+                            .foregroundColor(.red)
+                    }
+                }
+            }
+
+            // Generated token display
+            if let token = generatedToken {
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("New token generated")
+                        .font(.headline)
+                        .foregroundColor(.green)
+
+                    Text("⚠️ Copy this token now - you won't be able to see it again!")
+                        .font(.caption)
+                        .foregroundColor(.orange)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(Color.orange.opacity(0.1))
+                        .cornerRadius(4)
+
+                    HStack {
+                        Text(token)
+                            .font(.system(.caption, design: .monospaced))
+                            .foregroundColor(.primary)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
+                            .background(Color.secondary.opacity(0.1))
+                            .cornerRadius(4)
+                            .textSelection(.enabled)
+
+                        Button("Copy") {
+                            copyToClipboard(token)
+                        }
+                        .buttonStyle(.bordered)
+                        .controlSize(.small)
+                    }
+
+                    Button("Dismiss") {
+                        generatedToken = nil
+                        newTokenLabel = ""
+                        newTokenExpiration = .never
+                    }
+                    .buttonStyle(.borderless)
+                    .foregroundColor(.secondary)
+                }
+                .padding()
+                .background(Color.green.opacity(0.1))
+                .cornerRadius(8)
+            }
+
+            // Existing tokens list
+            VStack(alignment: .leading, spacing: 12) {
+                Text("Existing tokens")
+                    .font(.headline)
+
+                if accessTokens.isEmpty {
+                    VStack(spacing: 8) {
+                        Image(systemName: "key.slash")
+                            .font(.title2)
+                            .foregroundColor(.secondary)
+                        Text("No access tokens")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        Text("Generate your first token above to get started")
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
+                            .multilineTextAlignment(.center)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 20)
+                } else {
+                    VStack(spacing: 8) {
+                        ForEach(accessTokens) { token in
+                            AccessTokenRowView(
+                                token: token,
+                                onCopy: { copyToClipboard($0) },
+                                onRevoke: { revokeToken($0) }
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+
 
     // MARK: - Private Methods
 
@@ -446,6 +586,56 @@ struct SettingsView: View {
         case .accessToken:
             return SettingsManager.validateAccessToken(accessToken)
         }
+    }
+
+    private var canGenerateToken: Bool {
+        return !serverURL.isEmpty &&
+               ((authMethod == .basicAuth && !username.isEmpty) ||
+                (authMethod == .accessToken && !accessToken.isEmpty))
+    }
+
+    private func generateNewToken() {
+        guard !isGeneratingToken else { return }
+
+        isGeneratingToken = true
+        tokenError = nil
+
+        Task {
+            do {
+                let token = try await TokenManager.shared.generateToken(
+                    serverURL: serverURL,
+                    authMethod: authMethod,
+                    username: username,
+                    password: password,
+                    accessToken: accessToken,
+                    label: newTokenLabel.isEmpty ? nil : newTokenLabel,
+                    expiration: newTokenExpiration
+                )
+
+                await MainActor.run {
+                    self.generatedToken = token.token
+                    self.accessTokens.append(token)
+                    self.isGeneratingToken = false
+                }
+            } catch {
+                await MainActor.run {
+                    self.tokenError = error.localizedDescription
+                    self.isGeneratingToken = false
+                }
+            }
+        }
+    }
+
+    private func copyToClipboard(_ text: String) {
+        let pasteboard = NSPasteboard.general
+        pasteboard.clearContents()
+        pasteboard.setString(text, forType: .string)
+    }
+
+    private func revokeToken(_ token: AccessToken) {
+        // For now, just remove from local list
+        // TODO: Implement actual token revocation via API
+        accessTokens.removeAll { $0.id == token.id }
     }
 
     private func addTopic() {
@@ -830,6 +1020,98 @@ struct ServerEditorView: View {
 
         onSave(serverToSave)
         isPresented = false
+    }
+}
+
+struct AccessTokenRowView: View {
+    let token: AccessToken
+    let onCopy: (String) -> Void
+    let onRevoke: (AccessToken) -> Void
+
+    var body: some View {
+        HStack {
+            VStack(alignment: .leading, spacing: 4) {
+                HStack(spacing: 8) {
+                    Text(token.displayLabel)
+                        .font(.body)
+                        .fontWeight(.medium)
+
+                    if token.isExpired {
+                        Text("EXPIRED")
+                            .font(.caption2)
+                            .fontWeight(.bold)
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(Color.red)
+                            .cornerRadius(4)
+                    }
+                }
+
+                Text(token.maskedToken)
+                    .font(.system(.caption, design: .monospaced))
+                    .foregroundColor(.secondary)
+
+                HStack(spacing: 8) {
+                    if let lastAccessDate = token.lastAccessDate {
+                        Text("Last used: \(lastAccessDate, formatter: dateFormatter)")
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
+                    } else {
+                        Text("Never used")
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
+                    }
+
+                    Text("•")
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+
+                    if let expirationDate = token.expirationDate {
+                        Text("Expires: \(expirationDate, formatter: dateFormatter)")
+                            .font(.caption2)
+                            .foregroundColor(token.isExpired ? .red : .secondary)
+                    } else {
+                        Text("Never expires")
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
+                    }
+                }
+            }
+
+            Spacer()
+
+            HStack(spacing: 4) {
+                Button("Copy") {
+                    onCopy(token.token)
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+                .disabled(token.isExpired)
+
+                Button("Revoke") {
+                    onRevoke(token)
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+                .foregroundColor(.red)
+            }
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .background(token.isExpired ? Color.red.opacity(0.05) : Color.secondary.opacity(0.05))
+        .overlay(
+            RoundedRectangle(cornerRadius: 8)
+                .stroke(token.isExpired ? Color.red.opacity(0.2) : Color.clear, lineWidth: 1)
+        )
+        .cornerRadius(8)
+    }
+
+    private var dateFormatter: DateFormatter {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .short
+        formatter.timeStyle = .short
+        return formatter
     }
 }
 

@@ -214,3 +214,65 @@ struct NtfySettings: Codable, Equatable {
 
     static let `default` = NtfySettings()
 }
+
+struct AccessToken: Codable, Identifiable, Equatable {
+    var id = UUID()
+    let token: String
+    let label: String?
+    let lastAccess: Int?
+    let lastOrigin: String?
+    let expires: Int?
+    let created: Date
+
+    var isExpired: Bool {
+        guard let expires = expires else { return false }
+        return Date().timeIntervalSince1970 > TimeInterval(expires)
+    }
+
+    var expirationDate: Date? {
+        guard let expires = expires else { return nil }
+        return Date(timeIntervalSince1970: TimeInterval(expires))
+    }
+
+    var lastAccessDate: Date? {
+        guard let lastAccess = lastAccess else { return nil }
+        return Date(timeIntervalSince1970: TimeInterval(lastAccess))
+    }
+
+    var displayLabel: String {
+        return label?.isEmpty == false ? label! : "Unlabeled token"
+    }
+
+    var maskedToken: String {
+        guard token.count > 8 else { return token }
+        let prefix = String(token.prefix(8))
+        let suffix = String(token.suffix(4))
+        return "\(prefix)•••••••••••••••••••••••••••\(suffix)"
+    }
+}
+
+enum TokenExpiration: String, CaseIterable, Codable {
+    case never = "Never"
+    case oneHour = "1 hour"
+    case oneDay = "1 day"
+    case oneWeek = "1 week"
+    case oneMonth = "1 month"
+    case threeMonths = "3 months"
+    case oneYear = "1 year"
+
+    var displayName: String {
+        return rawValue
+    }
+
+    var timeInterval: TimeInterval? {
+        switch self {
+        case .never: return nil
+        case .oneHour: return 3600
+        case .oneDay: return 86400
+        case .oneWeek: return 604800
+        case .oneMonth: return 2629746 // 30.44 days
+        case .threeMonths: return 7889238 // 91.31 days
+        case .oneYear: return 31557600 // 365.25 days
+        }
+    }
+}

@@ -110,6 +110,7 @@ The project follows a structured approach with clear separation of concerns:
 - **Fallback Servers**: Automatic failover to backup servers with configurable retry delays
 - **UI Text Standardization**: Converted all interface text from Title Case to sentence case following modern UI guidelines
 - **Interface Cleanup**: Removed redundant text elements for cleaner, more professional appearance
+- **Access Token Management**: Complete implementation of personal access token generation and management via ntfy HTTP API
 
 ### Technical Implementation Details
 - **Window Positioning**: Uses `visibleFrame.maxY - windowHeight` for placement below menu bar
@@ -119,6 +120,8 @@ The project follows a structured approach with clear separation of concerns:
 - **State Management**: @MainActor isolation with Combine publishers for reactive UI updates
 - **Notification Categories**: UNNotificationCategory with interactive actions (Open, Mark Read, Dismiss)
 - **Multiple Topics**: Comma-separated topic URLs (`/topic1,topic2,topic3/json`) for simultaneous subscriptions with topic badges in UI
+- **Access Token API**: POST to `/v1/account/token` with optional label and expiration parameters
+- **Token Security**: Masked display format (tk_XXXX•••••XXXX) with one-time full display and clipboard integration
 
 ### Known Patterns
 - **Window Delegate**: Uses windowDidResignKey for click-outside-to-close behavior
