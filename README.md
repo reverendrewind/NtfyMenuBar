@@ -555,6 +555,12 @@ curl -X POST https://your-ntfy-server.com/your-topic \
 - ✅ **Enhanced Swift 6 compatibility**
   - Fixed concurrency warnings and actor isolation issues
   - Improved timer management for snooze countdown
+- ✅ **Fixed snooze countdown display**
+  - Now properly rounds to nearest minute for accurate time display
+  - Resolved misleading countdown (e.g., 4:59 now correctly shows "5m" instead of "4m")
+- ✅ **Improved snooze icon visibility**
+  - Updated diagonal slash to be more muted and cohesive with grayed-out bell icon
+  - Enhanced visual consistency in menu bar snooze state
 
 ### v2.3.0 - Message Filtering & Grouping
 - ✅ **Advanced message filtering system**

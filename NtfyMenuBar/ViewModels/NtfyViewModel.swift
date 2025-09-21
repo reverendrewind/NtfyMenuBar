@@ -187,8 +187,9 @@ class NtfyViewModel: ObservableObject {
             return "Snooze expiring..."
         }
 
-        let hours = Int(remaining) / 3600
-        let minutes = Int(remaining) % 3600 / 60
+        let totalMinutes = Int(round(remaining / 60))
+        let hours = totalMinutes / 60
+        let minutes = totalMinutes % 60
 
         if hours > 0 {
             return "Snoozed for \(hours)h \(minutes)m"
