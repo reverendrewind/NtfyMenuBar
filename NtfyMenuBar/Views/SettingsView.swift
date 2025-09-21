@@ -798,11 +798,25 @@ struct SettingsView: View {
                     }
                 }
 
-                Button("Refresh Statistics") {
-                    loadArchiveStatistics()
+                HStack {
+                    Button("Refresh Statistics") {
+                        loadArchiveStatistics()
+                    }
+                    .buttonStyle(.bordered)
+                    .disabled(isLoadingArchiveStats)
+
+                    Button("Test Archive") {
+                        testArchiveSystem()
+                    }
+                    .buttonStyle(.bordered)
+                    .foregroundColor(.orange)
+
+                    Button("Check Path") {
+                        checkArchivePath()
+                    }
+                    .buttonStyle(.bordered)
+                    .foregroundColor(.blue)
                 }
-                .buttonStyle(.bordered)
-                .disabled(isLoadingArchiveStats)
             }
 
             Divider()
@@ -1287,6 +1301,73 @@ struct SettingsView: View {
             await MainActor.run {
                 self.archiveStatistics = stats
                 self.isLoadingArchiveStats = false
+            }
+        }
+    }
+
+    private func testArchiveSystem() {
+        Task {
+            // Create a test message
+            let testMessage = NtfyMessage(
+                id: "test-\(UUID().uuidString)",
+                time: Int(Date().timeIntervalSince1970),
+                event: "message",
+                topic: "test-topic",
+                message: "This is a test message for archive verification",
+                title: "Test Archive Message",
+                priority: 3,
+                tags: ["test", "archive"]
+            )
+
+            print("🧪 Creating test message: \(testMessage.id)")
+
+            // Archive the test message
+            MessageArchive.shared.archiveMessage(testMessage)
+
+            // Wait a moment for archiving to complete
+            try? await Task.sleep(nanoseconds: 1_000_000_000) // 1 second
+
+            // Refresh statistics to see if it worked
+            await MainActor.run {
+                loadArchiveStatistics()
+            }
+
+            print("🧪 Test message archived, refreshing statistics...")
+        }
+    }
+
+    private func checkArchivePath() {
+        Task {
+            let appSupportURL = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
+            let archiveDirectory = appSupportURL.appendingPathComponent("NtfyMenuBar/MessageArchive")
+            let currentArchiveFile = archiveDirectory.appendingPathComponent("current.json")
+
+            print("📁 App Support URL: \(appSupportURL.path)")
+            print("📁 Archive directory: \(archiveDirectory.path)")
+            print("📁 Current archive file: \(currentArchiveFile.path)")
+            print("📁 Directory exists: \(FileManager.default.fileExists(atPath: archiveDirectory.path))")
+            print("📁 Current file exists: \(FileManager.default.fileExists(atPath: currentArchiveFile.path))")
+
+            // Try to read current file
+            if FileManager.default.fileExists(atPath: currentArchiveFile.path) {
+                do {
+                    let data = try Data(contentsOf: currentArchiveFile)
+                    print("📁 Current file size: \(data.count) bytes")
+
+                    let decoder = JSONDecoder()
+                    let container = try decoder.decode(ArchivedMessageContainer.self, from: data)
+                    print("📁 Messages in current file: \(container.messages.count)")
+                } catch {
+                    print("📁 Error reading current file: \(error)")
+                }
+            }
+
+            // List all files in archive directory
+            do {
+                let contents = try FileManager.default.contentsOfDirectory(at: archiveDirectory, includingPropertiesForKeys: nil)
+                print("📁 Archive directory contents: \(contents.map { $0.lastPathComponent })")
+            } catch {
+                print("📁 Error listing directory contents: \(error)")
             }
         }
     }
