@@ -667,7 +667,6 @@ struct SettingsView: View {
         }
     }
 
-
     // MARK: - Private Methods
 
     private var isValidConfiguration: Bool {
