@@ -17,9 +17,9 @@ struct NtfyMessage: Codable, Identifiable, Equatable {
     let priority: Int?
     let tags: [String]?
 
-    // Unique identifier for SwiftUI ForEach - combines original ID with timestamp
+    // Unique identifier for SwiftUI ForEach - combines original ID with timestamp and event
     var uniqueId: String {
-        return "\(id)-\(time)-\(topic)"
+        return "\(id)-\(time)-\(event)-\(topic)"
     }
     
     var date: Date {

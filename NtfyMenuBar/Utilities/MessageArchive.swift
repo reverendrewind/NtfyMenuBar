@@ -33,8 +33,10 @@ class MessageArchive {
     private func createArchiveDirectoryIfNeeded() {
         do {
             try fileManager.createDirectory(at: archiveDirectory, withIntermediateDirectories: true)
+            print("📂 Archive directory created/verified at: \(archiveDirectory.path)")
         } catch {
             print("❌ Failed to create archive directory: \(error)")
+            print("❌ Archive directory path: \(archiveDirectory.path)")
         }
     }
 
@@ -57,18 +59,25 @@ class MessageArchive {
     func getAllArchivedMessages() async -> [NtfyMessage] {
         // Check cache first
         if Date().timeIntervalSince(cacheLastUpdated) < cacheValidityInterval {
+            print("📂 Using cached messages: \(cachedMessages.count) messages")
             return cachedMessages
         }
 
+        print("📂 Loading all archived messages from files...")
         var allMessages: [NtfyMessage] = []
 
         // Load from current file
-        allMessages.append(contentsOf: await loadMessagesFromFile(currentArchiveFile))
+        let currentMessages = await loadMessagesFromFile(currentArchiveFile)
+        print("📂 Loaded \(currentMessages.count) messages from current archive file")
+        allMessages.append(contentsOf: currentMessages)
 
         // Load from rotated archive files
         let archiveFiles = getArchiveFiles()
+        print("📂 Found \(archiveFiles.count) rotated archive files")
         for file in archiveFiles {
-            allMessages.append(contentsOf: await loadMessagesFromFile(file))
+            let fileMessages = await loadMessagesFromFile(file)
+            print("📂 Loaded \(fileMessages.count) messages from \(file.lastPathComponent)")
+            allMessages.append(contentsOf: fileMessages)
         }
 
         // Sort by date (newest first) and remove duplicates
@@ -81,6 +90,7 @@ class MessageArchive {
         cachedMessages = Array(uniqueMessages)
         cacheLastUpdated = Date()
 
+        print("📂 Total unique archived messages: \(cachedMessages.count)")
         return cachedMessages
     }
 
@@ -115,6 +125,7 @@ class MessageArchive {
 
     func getArchiveStatistics() async -> ArchiveStatistics {
         let messages = await getAllArchivedMessages()
+        print("📊 Archive statistics: found \(messages.count) total messages")
 
         let totalCount = messages.count
         let topicCounts = Dictionary(grouping: messages) { $0.topic }
@@ -145,17 +156,23 @@ class MessageArchive {
     // MARK: - Private Implementation
 
     private func saveMessageToArchive(_ message: NtfyMessage) async {
+        print("📥 Attempting to archive message: \(message.id) - \(message.displayTitle)")
+
         // Check if message already exists to avoid duplicates
         let existingMessages = await loadMessagesFromFile(currentArchiveFile)
         if existingMessages.contains(where: { $0.id == message.id }) {
+            print("📥 Message \(message.id) already archived, skipping")
             return
         }
 
         var messages = existingMessages
         messages.insert(message, at: 0) // Insert at beginning (newest first)
 
+        print("📥 Archiving message \(message.id), total messages in current file: \(messages.count)")
+
         // Check if we need to rotate the archive
         if messages.count > maxMessagesPerFile {
+            print("📥 Rotating archive file (>= \(maxMessagesPerFile) messages)")
             await rotateArchive(messages: messages)
         } else {
             await saveMessagesToFile(messages, to: currentArchiveFile)
@@ -163,6 +180,7 @@ class MessageArchive {
 
         // Invalidate cache
         cacheLastUpdated = Date.distantPast
+        print("📥 Successfully archived message \(message.id)")
     }
 
     private func rotateArchive(messages: [NtfyMessage]) async {
@@ -220,6 +238,7 @@ class MessageArchive {
 
             let data = try encoder.encode(container)
             try data.write(to: url)
+            print("💾 Successfully saved \(messages.count) messages to \(url.lastPathComponent)")
         } catch {
             print("❌ Failed to save messages to \(url.lastPathComponent): \(error)")
         }

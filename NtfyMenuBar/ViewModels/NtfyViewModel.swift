@@ -95,8 +95,26 @@ class NtfyViewModel: ObservableObject {
         ntfyService?.$messages
             .receive(on: DispatchQueue.main)
             .sink { [weak self] newMessages in
-                self?.messages = newMessages
-                self?.hasUnreadMessages = !newMessages.isEmpty
+                guard let self = self else { return }
+
+                // Merge new messages with existing ones, avoiding duplicates
+                var allMessages = self.messages
+
+                for newMessage in newMessages {
+                    // Check if this message already exists
+                    if !allMessages.contains(where: { $0.uniqueId == newMessage.uniqueId }) {
+                        allMessages.insert(newMessage, at: 0)
+                    }
+                }
+
+                // Limit to maxRecentMessages
+                if allMessages.count > self.settings.maxRecentMessages {
+                    allMessages = Array(allMessages.prefix(self.settings.maxRecentMessages))
+                }
+
+                self.messages = allMessages
+                self.hasUnreadMessages = !allMessages.isEmpty
+                print("📱 Merged messages: \(newMessages.count) new, \(allMessages.count) total")
             }
             .store(in: &cancellables)
     }
@@ -208,10 +226,14 @@ class NtfyViewModel: ObservableObject {
             let recentMessages = await MessageArchive.shared.getArchivedMessages(since: weekAgo)
 
             await MainActor.run {
-                // Only show the most recent messages up to maxRecentMessages
-                self.messages = Array(recentMessages.prefix(self.settings.maxRecentMessages))
+                // Only show the most recent messages up to maxRecentMessages, but avoid duplicates
+                let uniqueMessages = recentMessages.reduce(into: [String: NtfyMessage]()) { dict, message in
+                    dict[message.uniqueId] = message
+                }.values.sorted { $0.date > $1.date }
+
+                self.messages = Array(uniqueMessages.prefix(self.settings.maxRecentMessages))
                 self.hasUnreadMessages = !self.messages.isEmpty
-                print("📂 Loaded \(self.messages.count) recent archived messages")
+                print("📂 Loaded \(self.messages.count) recent archived messages (deduplicated)")
             }
         }
     }
