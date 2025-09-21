@@ -7,27 +7,22 @@
 
 import SwiftUI
 
-enum PriorityFilter: String, CaseIterable {
-    case all = "All"
-    case min = "Min (1)"
-    case low = "Low (2)"
-    case normal = "Normal (3)"
-    case high = "High (4)"
-    case max = "Max (5)"
 
-    var priorityValue: Int? {
-        switch self {
-        case .all: return nil
-        case .min: return 1
-        case .low: return 2
-        case .normal: return 3
-        case .high: return 4
-        case .max: return 5
-        }
-    }
+enum GroupingMode: String, CaseIterable {
+    case none = "None"
+    case byTopic = "By topic"
+    case byPriority = "By priority"
 
     var displayName: String {
         return rawValue
+    }
+
+    var systemImage: String {
+        switch self {
+        case .none: return "list.bullet"
+        case .byTopic: return "folder"
+        case .byPriority: return "flag"
+        }
     }
 }
 
@@ -38,10 +33,14 @@ struct ContentView: View {
 
     // Filtering and search state
     @State private var searchText: String = ""
-    @State private var selectedPriorityFilter: PriorityFilter = .all
-    @State private var selectedTopicFilter: String = "All topics"
+    @State private var selectedPriorities: Set<Int> = []
+    @State private var selectedTopics: Set<String> = []
     @State private var showFilterOptions: Bool = false
     @FocusState private var isSearchFocused: Bool
+
+    // Grouping state
+    @State private var groupingMode: GroupingMode = .none
+    @State private var collapsedSections: Set<String> = []
     
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -269,21 +268,94 @@ struct ContentView: View {
 
     private var filterOptionsView: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Filter messages")
+            Text("Filter & group messages")
                 .font(.headline)
                 .padding(.bottom, 4)
+
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Grouping")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+
+                Picker("Grouping", selection: $groupingMode) {
+                    ForEach(GroupingMode.allCases, id: \.self) { mode in
+                        Label(mode.displayName, systemImage: mode.systemImage)
+                            .tag(mode)
+                    }
+                }
+                .pickerStyle(.menu)
+            }
+
+            Divider()
 
             VStack(alignment: .leading, spacing: 8) {
                 Text("Priority")
                     .font(.caption)
                     .foregroundColor(.secondary)
 
-                Picker("Priority", selection: $selectedPriorityFilter) {
-                    ForEach(PriorityFilter.allCases, id: \.self) { filter in
-                        Text(filter.displayName).tag(filter)
+                Menu {
+                    // Select/Deselect all
+                    Button(action: {
+                        let allPriorities = Set([1, 2, 3, 4, 5])
+                        if selectedPriorities == allPriorities {
+                            selectedPriorities.removeAll()
+                        } else {
+                            selectedPriorities = allPriorities
+                        }
+                    }) {
+                        HStack {
+                            let allPriorities = Set([1, 2, 3, 4, 5])
+                            Image(systemName: selectedPriorities == allPriorities ? "checkmark" : selectedPriorities.isEmpty ? "" : "minus")
+                            Text("All priorities")
+                        }
                     }
+
+                    Divider()
+
+                    // Individual priority checkboxes (in descending order)
+                    ForEach([5, 4, 3, 2, 1], id: \.self) { priority in
+                        Button(action: {
+                            if selectedPriorities.contains(priority) {
+                                selectedPriorities.remove(priority)
+                            } else {
+                                selectedPriorities.insert(priority)
+                            }
+                        }) {
+                            HStack {
+                                Image(systemName: selectedPriorities.contains(priority) ? "checkmark" : "")
+                                    .frame(width: 12)
+                                Text(priorityDisplayName(for: priority))
+                                Spacer()
+                                let count = viewModel.messages.filter { ($0.priority ?? 3) == priority }.count
+                                Text("(\(count))")
+                                    .foregroundColor(.secondary)
+                            }
+                        }
+                    }
+                } label: {
+                    HStack {
+                        if selectedPriorities.isEmpty {
+                            Text("All priorities")
+                                .font(.caption)
+                        } else if selectedPriorities.count == 1 {
+                            Text(priorityDisplayName(for: selectedPriorities.first!))
+                                .font(.caption)
+                        } else {
+                            Text("\(selectedPriorities.count) priorities selected")
+                                .font(.caption)
+                        }
+                        Spacer()
+                        Image(systemName: "chevron.up.chevron.down")
+                            .font(.system(size: 10))
+                    }
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(Color.secondary.opacity(0.1))
+                    .cornerRadius(6)
                 }
-                .pickerStyle(.menu)
+                .menuStyle(.borderlessButton)
+                .fixedSize()
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
 
             VStack(alignment: .leading, spacing: 8) {
@@ -291,30 +363,111 @@ struct ContentView: View {
                     .font(.caption)
                     .foregroundColor(.secondary)
 
-                Picker("Topic", selection: $selectedTopicFilter) {
-                    Text("All topics").tag("All topics")
-                    ForEach(availableTopics, id: \.self) { topic in
-                        Text(topic).tag(topic)
+                Menu {
+                    // Select/Deselect all
+                    Button(action: {
+                        if selectedTopics.count == availableTopics.count {
+                            selectedTopics.removeAll()
+                        } else {
+                            selectedTopics = Set(availableTopics)
+                        }
+                    }) {
+                        HStack {
+                            Image(systemName: selectedTopics.count == availableTopics.count ? "checkmark" : selectedTopics.isEmpty ? "" : "minus")
+                            Text("All topics")
+                        }
                     }
+
+                    Divider()
+
+                    // Individual topic checkboxes
+                    ForEach(availableTopics, id: \.self) { topic in
+                        Button(action: {
+                            if selectedTopics.contains(topic) {
+                                selectedTopics.remove(topic)
+                            } else {
+                                selectedTopics.insert(topic)
+                            }
+                        }) {
+                            HStack {
+                                Image(systemName: selectedTopics.contains(topic) ? "checkmark" : "")
+                                    .frame(width: 12)
+                                Text(topic)
+                                Spacer()
+                                let count = viewModel.messages.filter { $0.topic == topic }.count
+                                Text("(\(count))")
+                                    .foregroundColor(.secondary)
+                            }
+                        }
+                    }
+                } label: {
+                    HStack {
+                        if selectedTopics.isEmpty {
+                            Text("All topics")
+                                .font(.caption)
+                        } else if selectedTopics.count == 1 {
+                            Text(selectedTopics.first!)
+                                .font(.caption)
+                        } else {
+                            Text("\(selectedTopics.count) topics selected")
+                                .font(.caption)
+                        }
+                        Spacer()
+                        Image(systemName: "chevron.up.chevron.down")
+                            .font(.system(size: 10))
+                    }
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(Color.secondary.opacity(0.1))
+                    .cornerRadius(6)
                 }
-                .pickerStyle(.menu)
+                .menuStyle(.borderlessButton)
+                .fixedSize()
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
 
-            Button("Clear filters") {
-                clearAllFilters()
+            HStack(spacing: 8) {
+                Button("Clear filters") {
+                    clearAllFilters()
+                }
+                .buttonStyle(.bordered)
+                .disabled(!hasActiveFilters)
+
+                if groupingMode != .none && !collapsedSections.isEmpty {
+                    Button("Expand all") {
+                        collapsedSections.removeAll()
+                    }
+                    .buttonStyle(.bordered)
+                }
             }
-            .buttonStyle(.bordered)
-            .disabled(!hasActiveFilters)
         }
         .padding()
-        .frame(width: 200)
+        .frame(width: 220)
     }
 
     private var messagesView: some View {
         ScrollView {
-            LazyVStack(alignment: .leading, spacing: 6) {
-                ForEach(filteredMessages, id: \.uniqueId) { message in
-                    MessageRowView(message: message)
+            if groupingMode == .none {
+                // Ungrouped view
+                LazyVStack(alignment: .leading, spacing: 2) {
+                    ForEach(filteredMessages, id: \.uniqueId) { message in
+                        MessageRowView(message: message)
+                    }
+                }
+            } else {
+                // Grouped view
+                LazyVStack(alignment: .leading, spacing: 8) {
+                    ForEach(messageGroups, id: \.key) { group in
+                        MessageGroupView(
+                            title: group.key,
+                            messages: group.value,
+                            isCollapsed: collapsedSections.contains(group.key),
+                            groupingMode: groupingMode,
+                            onToggle: {
+                                toggleSection(group.key)
+                            }
+                        )
+                    }
                 }
             }
         }
@@ -344,9 +497,27 @@ struct ContentView: View {
                 .padding(.vertical, 20)
             } else {
                 ScrollView {
-                    LazyVStack(alignment: .leading, spacing: 6) {
-                        ForEach(filteredMessages, id: \.uniqueId) { message in
-                            MessageRowView(message: message)
+                    if groupingMode == .none {
+                        // Ungrouped view
+                        LazyVStack(alignment: .leading, spacing: 2) {
+                            ForEach(filteredMessages, id: \.uniqueId) { message in
+                                MessageRowView(message: message)
+                            }
+                        }
+                    } else {
+                        // Grouped view
+                        LazyVStack(alignment: .leading, spacing: 8) {
+                            ForEach(messageGroups, id: \.key) { group in
+                                MessageGroupView(
+                                    title: group.key,
+                                    messages: group.value,
+                                    isCollapsed: collapsedSections.contains(group.key),
+                                    groupingMode: groupingMode,
+                                    onToggle: {
+                                        toggleSection(group.key)
+                                    }
+                                )
+                            }
                         }
                     }
                 }
@@ -409,17 +580,17 @@ struct ContentView: View {
             }
         }
 
-        // Apply priority filter
-        if let priorityValue = selectedPriorityFilter.priorityValue {
+        // Apply priority filter (multi-selection)
+        if !selectedPriorities.isEmpty {
             messages = messages.filter { message in
-                (message.priority ?? 3) == priorityValue
+                selectedPriorities.contains(message.priority ?? 3)
             }
         }
 
-        // Apply topic filter
-        if selectedTopicFilter != "All topics" {
+        // Apply topic filter (multi-selection)
+        if !selectedTopics.isEmpty {
             messages = messages.filter { message in
-                message.topic == selectedTopicFilter
+                selectedTopics.contains(message.topic)
             }
         }
 
@@ -431,17 +602,183 @@ struct ContentView: View {
         return Array(allTopics).sorted()
     }
 
+    private var messageGroups: [(key: String, value: [NtfyMessage])] {
+        let messages = filteredMessages
+
+        switch groupingMode {
+        case .none:
+            return []
+        case .byTopic:
+            // Group by topic
+            let grouped = Dictionary(grouping: messages) { $0.topic }
+            return grouped.sorted { $0.key < $1.key }
+                .map { (key: $0.key, value: $0.value.sorted { $0.date > $1.date }) }
+        case .byPriority:
+            // Group by priority
+            let grouped = Dictionary(grouping: messages) { message in
+                message.priorityDescription
+            }
+            // Sort priority groups in descending order (Max to Min)
+            let priorityOrder = ["Max", "High", "Default", "Low", "Min"]
+            return grouped.sorted { first, second in
+                let firstIndex = priorityOrder.firstIndex(of: first.key) ?? 999
+                let secondIndex = priorityOrder.firstIndex(of: second.key) ?? 999
+                return firstIndex < secondIndex
+            }
+            .map { (key: $0.key, value: $0.value.sorted { $0.date > $1.date }) }
+        }
+    }
+
+    private func toggleSection(_ section: String) {
+        if collapsedSections.contains(section) {
+            collapsedSections.remove(section)
+        } else {
+            collapsedSections.insert(section)
+        }
+    }
+
     private var hasActiveFilters: Bool {
         return !searchText.isEmpty ||
-               selectedPriorityFilter != .all ||
-               selectedTopicFilter != "All topics"
+               !selectedPriorities.isEmpty ||
+               !selectedTopics.isEmpty
     }
 
     private func clearAllFilters() {
         searchText = ""
-        selectedPriorityFilter = .all
-        selectedTopicFilter = "All topics"
+        selectedPriorities.removeAll()
+        selectedTopics.removeAll()
         showFilterOptions = false
+    }
+
+    private func priorityDisplayName(for priority: Int) -> String {
+        switch priority {
+        case 1: return "Min (1)"
+        case 2: return "Low (2)"
+        case 3: return "Normal (3)"
+        case 4: return "High (4)"
+        case 5: return "Max (5)"
+        default: return "Normal (3)"
+        }
+    }
+}
+
+struct MessageGroupView: View {
+    let title: String
+    let messages: [NtfyMessage]
+    let isCollapsed: Bool
+    let groupingMode: GroupingMode
+    let onToggle: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            // Group header
+            Button(action: onToggle) {
+                HStack(spacing: 6) {
+                    Image(systemName: isCollapsed ? "chevron.right" : "chevron.down")
+                        .font(.system(size: 10))
+                        .foregroundColor(.secondary)
+
+                    Image(systemName: groupIcon)
+                        .font(.system(size: 11))
+                        .foregroundColor(groupColor)
+
+                    Text(title)
+                        .font(.caption)
+                        .fontWeight(.medium)
+                        .foregroundColor(.primary)
+
+                    Spacer()
+
+                    // Message count badge
+                    Text("\(messages.count)")
+                        .font(.caption2)
+                        .fontWeight(.medium)
+                        .foregroundColor(.secondary)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(Color.secondary.opacity(0.15))
+                        .cornerRadius(6)
+
+                    // Priority indicator for priority grouping
+                    if groupingMode == .byPriority {
+                        Circle()
+                            .fill(priorityColor)
+                            .frame(width: 6, height: 6)
+                    }
+                }
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            .background(Color.secondary.opacity(0.05))
+            .cornerRadius(6)
+            .hoverEffect()
+
+            // Messages (if not collapsed)
+            if !isCollapsed {
+                VStack(alignment: .leading, spacing: 2) {
+                    ForEach(messages, id: \.uniqueId) { message in
+                        MessageRowView(message: message)
+                            .padding(.leading, 12)
+                    }
+                }
+                .transition(.opacity.combined(with: .move(edge: .top)))
+            }
+        }
+        .animation(.easeInOut(duration: 0.2), value: isCollapsed)
+    }
+
+    private var groupIcon: String {
+        switch groupingMode {
+        case .byTopic:
+            return "folder.fill"
+        case .byPriority:
+            return "flag.fill"
+        case .none:
+            return "list.bullet"
+        }
+    }
+
+    private var groupColor: Color {
+        switch groupingMode {
+        case .byTopic:
+            return .blue
+        case .byPriority:
+            return priorityColor
+        case .none:
+            return .secondary
+        }
+    }
+
+    private var priorityColor: Color {
+        switch title {
+        case "Max":
+            return .red
+        case "High":
+            return .orange
+        case "Default":
+            return .yellow
+        case "Low":
+            return .blue
+        case "Min":
+            return .gray
+        default:
+            return .secondary
+        }
+    }
+}
+
+// Helper extension for hover effect
+extension View {
+    func hoverEffect() -> some View {
+        self.onHover { isHovering in
+            if isHovering {
+                NSCursor.pointingHand.push()
+            } else {
+                NSCursor.pop()
+            }
+        }
     }
 }
 

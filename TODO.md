@@ -17,7 +17,7 @@
 #### UI/UX Improvements - Client-Side ✅
 - [x] Dark/Light mode sync with system *(Already implemented)*
 - [x] Customizable notification sounds *(Completed)*
-- [ ] Message grouping by topic/priority
+- [x] Message grouping by topic/priority *(Completed)*
 - [x] Keyboard shortcuts for common actions *(Completed)*
 - [ ] Notification snoozing
 - [ ] Do Not Disturb scheduling

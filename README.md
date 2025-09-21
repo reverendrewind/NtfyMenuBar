@@ -20,6 +20,11 @@ A native macOS menu bar application for [ntfy](https://ntfy.sh) notifications. G
 - **Multi-Desktop Support**: Dashboard appears on current desktop/space, not locked to launch desktop
 - **Custom App Icons**: Generated from SVG with proper menu bar template rendering
 - **Dark Mode Support**: Configurable appearance with Light, Dark, and System options
+- **Message Management**: Advanced filtering and grouping with search functionality
+- **Smart Filtering**: Multi-selection filters for topics and priorities with dropdown interface
+- **Message Grouping**: Organize messages by topic or priority with collapsible sections
+- **Powerful Search**: Search across message content, titles, topics, and tags
+- **Access Token Management**: Generate and manage ntfy access tokens directly from the app
 - **Customizable Settings**: Configure notification preferences, message limits, appearance, and auto-connect
 - **Connection Stability**: Improved SSE handling with auto-reconnect and keepalive timers
 - **Sandbox Compatible**: Full App Sandbox support with proper network entitlements
@@ -35,12 +40,16 @@ A native macOS menu bar application for [ntfy](https://ntfy.sh) notifications. G
 - Shows server URL and topic in header when connected
 - Connection status indicator (green=connected, red=disconnected, orange=not configured)
 - Real-time message list with empty state when no notifications
+- Advanced filtering and search interface with compact dropdown menus
+- Message grouping by topic or priority with collapsible sections
+- Multi-selection filtering for both topics and priorities
 - Visual tag emojis for instant notification categorization (99+ supported tag types)
 - Integrated settings and connection controls in footer with proper window management
 
 *Settings Panel*
 - Server configuration (URL and topic) with validation
 - Authentication method selection (Basic Auth or Access Token)
+- Access token generation and management with secure clipboard copying
 - Secure credential management via macOS Keychain
 - Appearance mode selection (Light, Dark, System)
 - Notification preferences and auto-connect toggle
@@ -119,6 +128,35 @@ Access tokens must be exactly 32 characters and start with `tk_`. Tokens are sto
   - Quit application
 - **Click Outside Dashboard**: Automatically closes the dashboard panel
 - **Escape Key**: Close dashboard when it has focus
+
+### Message Management & Filtering
+
+The dashboard provides advanced message management capabilities:
+
+**Search & Filter Interface:**
+- **Search Bar**: Search across message content, titles, topics, and tags
+- **Topic Filter**: Multi-selection dropdown for filtering by specific topics
+- **Priority Filter**: Multi-selection dropdown for filtering by priority levels (1-5)
+- **Filter Indicator**: Active filters are highlighted with a blue dot
+- **Clear All**: Quick button to reset all active filters
+
+**Message Grouping:**
+- **Group by Topic**: Organize messages into collapsible topic-based sections
+- **Group by Priority**: Group messages by priority level with visual indicators
+- **Expand/Collapse**: Click group headers to toggle section visibility
+- **Group Counts**: Each group shows the number of messages contained
+
+**Filter Controls:**
+- **Multi-Selection**: Select multiple topics or priorities simultaneously
+- **Select All/None**: Quick toggles for all available options
+- **Filter Persistence**: Selected filters remain active until manually cleared
+- **Visual Feedback**: Selected items are clearly indicated with checkmarks
+
+**Keyboard Shortcuts:**
+- **Escape**: Clear active search filters
+- **⌘+Delete**: Clear all messages
+- **⌘+D**: Toggle connection
+- **⌘+,**: Open settings
 
 ### Enhanced Notifications
 Once configured and connected, you'll receive rich, branded notifications featuring:

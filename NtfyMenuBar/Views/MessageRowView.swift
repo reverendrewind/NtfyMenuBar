@@ -56,7 +56,7 @@ struct MessageRowView: View {
             }
         }
         .padding(.horizontal, 8)
-        .padding(.vertical, 4)
+        .padding(.vertical, 2)
         .background(Color.theme.cardBackground)
         .cornerRadius(6)
     }
