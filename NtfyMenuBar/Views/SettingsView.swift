@@ -816,6 +816,12 @@ struct SettingsView: View {
                     }
                     .buttonStyle(.bordered)
                     .foregroundColor(.blue)
+
+                    Button("Clear Archive") {
+                        clearCorruptedArchive()
+                    }
+                    .buttonStyle(.bordered)
+                    .foregroundColor(.red)
                 }
             }
 
@@ -1368,6 +1374,28 @@ struct SettingsView: View {
                 print("📁 Archive directory contents: \(contents.map { $0.lastPathComponent })")
             } catch {
                 print("📁 Error listing directory contents: \(error)")
+            }
+        }
+    }
+
+    private func clearCorruptedArchive() {
+        Task {
+            let appSupportURL = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
+            let archiveDirectory = appSupportURL.appendingPathComponent("NtfyMenuBar/MessageArchive")
+            let currentArchiveFile = archiveDirectory.appendingPathComponent("current.json")
+
+            do {
+                if FileManager.default.fileExists(atPath: currentArchiveFile.path) {
+                    try FileManager.default.removeItem(at: currentArchiveFile)
+                    print("🗑️ Cleared corrupted archive file")
+                }
+
+                // Clear cache
+                await MainActor.run {
+                    loadArchiveStatistics()
+                }
+            } catch {
+                print("❌ Failed to clear archive: \(error)")
             }
         }
     }

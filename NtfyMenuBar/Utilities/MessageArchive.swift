@@ -215,6 +215,7 @@ class MessageArchive {
         do {
             let data = try Data(contentsOf: url)
             let decoder = JSONDecoder()
+            decoder.dateDecodingStrategy = .iso8601
             let archivedData = try decoder.decode(ArchivedMessageContainer.self, from: data)
             return archivedData.messages
         } catch {
