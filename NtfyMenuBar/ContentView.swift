@@ -728,13 +728,6 @@ struct ContentView: View {
                 .foregroundColor(.orange)
 
             Spacer()
-
-            Button("Clear") {
-                viewModel.clearSnooze()
-            }
-            .font(.caption2)
-            .buttonStyle(.plain)
-            .foregroundColor(.orange)
         }
         .padding(.horizontal, 8)
         .padding(.vertical, 4)

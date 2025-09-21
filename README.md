@@ -181,7 +181,7 @@ Temporarily silence notifications while still receiving and displaying messages 
 - **Custom Visual Feedback**: Menu bar icon changes to grayed-out ntfy bell with diagonal slash when snoozed
 - **Real-time Countdown**: Live display of remaining snooze time
 - **Auto-expiration**: Snooze automatically clears when time expires
-- **Quick Clear**: One-click snooze cancellation from dashboard or menu
+- **Quick Clear**: One-click snooze cancellation from bell icon in dashboard header
 
 **How It Works:**
 - Messages continue to be received and displayed in the dashboard
