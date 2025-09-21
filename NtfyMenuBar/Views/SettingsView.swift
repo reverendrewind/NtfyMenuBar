@@ -922,9 +922,24 @@ struct SettingsView: View {
                 Text("Export Messages")
                     .font(.headline)
 
-                Text("Export your messages to CSV or JSON format for analysis or backup.")
+                Text("Export your messages to CSV or JSON format for analysis or backup. Files are saved to the application's export folder.")
                     .font(.caption)
                     .foregroundColor(.secondary)
+
+                // Export location info
+                HStack {
+                    Image(systemName: "folder")
+                        .foregroundColor(.secondary)
+                    Text("Export location:")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    Button("Show in Finder") {
+                        revealExportsFolder()
+                    }
+                    .font(.caption)
+                    .buttonStyle(.link)
+                    Spacer()
+                }
 
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Recent messages (last 7 days)")
@@ -1424,6 +1439,18 @@ struct SettingsView: View {
             alert.addButton(withTitle: "OK")
             alert.runModal()
         }
+    }
+
+    private func revealExportsFolder() {
+        let fileManager = FileManager.default
+        let appSupportURL = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
+        let exportDirectory = appSupportURL.appendingPathComponent("NtfyMenuBar/Exports")
+
+        // Create exports directory if it doesn't exist
+        try? fileManager.createDirectory(at: exportDirectory, withIntermediateDirectories: true)
+
+        // Reveal in Finder
+        NSWorkspace.shared.activateFileViewerSelecting([exportDirectory])
     }
 }
 

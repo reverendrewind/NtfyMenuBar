@@ -53,26 +53,37 @@ class ExportManager {
         scope: ExportScope,
         completion: @escaping (Result<URL, Error>) -> Void
     ) {
-        // Show save panel
-        let savePanel = NSSavePanel()
-        savePanel.title = "Export \(scope.displayName) as \(format.displayName)"
-        savePanel.allowedContentTypes = [.init(filenameExtension: format.fileExtension)!]
-        savePanel.nameFieldStringValue = generateFilename(for: format, scope: scope)
-        savePanel.canCreateDirectories = true
+        // For now, export directly to Desktop to bypass entitlements issues
+        // TODO: Re-enable save panel once entitlements are properly configured
+        exportToDesktop(messages, format: format, scope: scope, completion: completion)
+    }
 
-        savePanel.begin { response in
-            guard response == .OK, let url = savePanel.url else {
-                completion(.failure(ExportError.userCancelled))
-                return
-            }
+    private func exportToDesktop(
+        _ messages: [NtfyMessage],
+        format: ExportFormat,
+        scope: ExportScope,
+        completion: @escaping (Result<URL, Error>) -> Void
+    ) {
+        do {
+            let filename = generateFilename(for: format, scope: scope)
 
-            do {
-                let exportData = try self.generateExportData(messages: messages, format: format)
-                try exportData.write(to: url, atomically: true, encoding: .utf8)
-                completion(.success(url))
-            } catch {
-                completion(.failure(error))
-            }
+            // Use Application Support directory where we already have write access
+            let appSupportURL = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
+            let exportDirectory = appSupportURL.appendingPathComponent("NtfyMenuBar/Exports")
+
+            // Create exports directory if it doesn't exist
+            try FileManager.default.createDirectory(at: exportDirectory, withIntermediateDirectories: true)
+
+            let fileURL = exportDirectory.appendingPathComponent(filename)
+
+            let exportData = try generateExportData(messages: messages, format: format)
+            try exportData.write(to: fileURL, atomically: true, encoding: .utf8)
+
+            print("📤 Export saved to: \(fileURL.path)")
+            completion(.success(fileURL))
+        } catch {
+            print("❌ Export failed: \(error)")
+            completion(.failure(error))
         }
     }
 
