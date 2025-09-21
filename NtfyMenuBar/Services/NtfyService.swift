@@ -388,9 +388,10 @@ class NtfyService: ObservableObject {
                     self.messages = Array(self.messages.prefix(self.settings.maxRecentMessages))
                 }
                 
-                // Show notification if enabled
-                if self.settings.enableNotifications {
-                    self.notificationManager.showNotification(for: ntfyMessage, settings: self.settings)
+                // Show notification if enabled (check current settings to get latest snooze state)
+                let currentSettings = SettingsManager.loadSettings()
+                if currentSettings.enableNotifications {
+                    self.notificationManager.showNotification(for: ntfyMessage, settings: currentSettings)
                 }
             }
         } catch {

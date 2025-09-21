@@ -37,6 +37,12 @@ class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
     }
     
     func showNotification(for message: NtfyMessage, settings: NtfySettings = SettingsManager.loadSettings()) {
+        // Check if notifications are snoozed
+        if settings.isCurrentlySnoozed {
+            print("🔕 Notification skipped due to snooze mode: \(message.displayTitle)")
+            return
+        }
+
         let content = UNMutableNotificationContent()
         
         // Enhanced branding with ntfy prefix and priority indicators

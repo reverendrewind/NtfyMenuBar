@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import Foundation
 
 
 enum GroupingMode: String, CaseIterable {
@@ -108,7 +109,17 @@ struct ContentView: View {
 
                 Spacer()
 
-                connectionStatusView
+                HStack(spacing: 8) {
+                    // Snooze button and status
+                    snoozeControlView
+
+                    connectionStatusView
+                }
+            }
+
+            // Snooze status bar (only show if snoozed)
+            if viewModel.isSnoozed {
+                snoozeStatusView
             }
 
             // Search and filter bar (only show if there are messages)
@@ -659,6 +670,76 @@ struct ContentView: View {
         case 5: return "Max (5)"
         default: return "Normal (3)"
         }
+    }
+
+    // MARK: - Snooze Controls
+
+    private var snoozeControlView: some View {
+        Group {
+            if viewModel.isSnoozed {
+                // Show unsnooze button when snoozed
+                Button(action: {
+                    viewModel.clearSnooze()
+                }) {
+                    Image(systemName: "bell.slash.fill")
+                        .font(.system(size: 12))
+                        .foregroundColor(.orange)
+                }
+                .buttonStyle(.plain)
+                .help("Clear snooze")
+            } else {
+                // Show snooze menu when not snoozed
+                Menu {
+                    ForEach(SnoozeDuration.allCases.filter { $0 != .custom }, id: \.self) { duration in
+                        Button(action: {
+                            viewModel.snoozeNotifications(duration: duration)
+                        }) {
+                            Label(duration.displayName, systemImage: duration.systemImage)
+                        }
+                    }
+
+                    Divider()
+
+                    Button(action: {
+                        // TODO: Implement custom duration picker
+                        viewModel.snoozeNotifications(duration: .custom, customDuration: 60 * 60) // 1 hour default
+                    }) {
+                        Label("Custom...", systemImage: "slider.horizontal.3")
+                    }
+                } label: {
+                    Image(systemName: "bell")
+                        .font(.system(size: 12))
+                        .foregroundColor(.secondary)
+                }
+                .buttonStyle(.plain)
+                .help("Snooze notifications")
+            }
+        }
+    }
+
+    private var snoozeStatusView: some View {
+        HStack(spacing: 6) {
+            Image(systemName: "bell.slash.fill")
+                .font(.system(size: 10))
+                .foregroundColor(.orange)
+
+            Text(viewModel.snoozeStatusText)
+                .font(.caption2)
+                .foregroundColor(.orange)
+
+            Spacer()
+
+            Button("Clear") {
+                viewModel.clearSnooze()
+            }
+            .font(.caption2)
+            .buttonStyle(.plain)
+            .foregroundColor(.orange)
+        }
+        .padding(.horizontal, 8)
+        .padding(.vertical, 4)
+        .background(Color.orange.opacity(0.1))
+        .cornerRadius(6)
     }
 }
 

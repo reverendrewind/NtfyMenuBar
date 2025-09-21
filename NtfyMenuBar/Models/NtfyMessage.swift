@@ -155,6 +155,50 @@ struct NtfyServer: Codable, Equatable, Identifiable {
     }
 }
 
+enum SnoozeDuration: String, Codable, CaseIterable {
+    case fiveMinutes = "5 minutes"
+    case fifteenMinutes = "15 minutes"
+    case thirtyMinutes = "30 minutes"
+    case oneHour = "1 hour"
+    case twoHours = "2 hours"
+    case fourHours = "4 hours"
+    case eightHours = "8 hours"
+    case untilTomorrow = "Until tomorrow"
+    case custom = "Custom"
+
+    var displayName: String {
+        return rawValue
+    }
+
+    var timeInterval: TimeInterval {
+        switch self {
+        case .fiveMinutes: return 5 * 60
+        case .fifteenMinutes: return 15 * 60
+        case .thirtyMinutes: return 30 * 60
+        case .oneHour: return 60 * 60
+        case .twoHours: return 2 * 60 * 60
+        case .fourHours: return 4 * 60 * 60
+        case .eightHours: return 8 * 60 * 60
+        case .untilTomorrow:
+            let now = Date()
+            let calendar = Calendar.current
+            let tomorrow = calendar.startOfDay(for: calendar.date(byAdding: .day, value: 1, to: now) ?? now)
+            return tomorrow.timeIntervalSince(now)
+        case .custom: return 0
+        }
+    }
+
+    var systemImage: String {
+        switch self {
+        case .fiveMinutes, .fifteenMinutes, .thirtyMinutes: return "clock"
+        case .oneHour, .twoHours: return "clock.circle"
+        case .fourHours, .eightHours: return "clock.circle.fill"
+        case .untilTomorrow: return "moon.zzz"
+        case .custom: return "slider.horizontal.3"
+        }
+    }
+}
+
 struct NtfySettings: Codable, Equatable {
     var serverURL: String = ""
     var fallbackServers: [NtfyServer] = []
@@ -170,6 +214,23 @@ struct NtfySettings: Codable, Equatable {
     var enableFallbackServers: Bool = false
     var fallbackRetryDelay: Double = 30.0 // seconds
 
+    // Snooze settings
+    var isSnoozed: Bool = false
+    var snoozeEndTime: Date?
+    var defaultSnoozeDuration: SnoozeDuration = .thirtyMinutes
+
+    // Computed property to check if notifications are currently snoozed
+    var isCurrentlySnoozed: Bool {
+        guard isSnoozed, let endTime = snoozeEndTime else { return false }
+        return Date() < endTime
+    }
+
+    // Time remaining in snooze
+    var snoozeTimeRemaining: TimeInterval? {
+        guard let endTime = snoozeEndTime, isCurrentlySnoozed else { return nil }
+        return endTime.timeIntervalSince(Date())
+    }
+
     // Legacy single topic support for migration
     var topic: String {
         get { topics.first ?? "" }
@@ -184,7 +245,7 @@ struct NtfySettings: Codable, Equatable {
     var primaryServer: NtfyServer {
         return NtfyServer(
             url: serverURL,
-            name: "Primary server",
+            name: "", // Empty name so displayName falls back to cleanURL
             authMethod: authMethod,
             username: username,
             isEnabled: true

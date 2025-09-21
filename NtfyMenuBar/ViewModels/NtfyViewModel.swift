@@ -15,9 +15,12 @@ class NtfyViewModel: ObservableObject {
     @Published var messages: [NtfyMessage] = []
     @Published var settings: NtfySettings
     @Published var connectionError: String?
-    
+    @Published var isSnoozed = false
+    @Published var snoozeTimeRemaining: TimeInterval?
+
     private var ntfyService: NtfyService?
     private var cancellables = Set<AnyCancellable>()
+    private var snoozeTimer: Timer?
 
     // Expose service for UI access to connection quality
     var service: NtfyService {
@@ -30,7 +33,8 @@ class NtfyViewModel: ObservableObject {
     init() {
         self.settings = SettingsManager.loadSettings()
         setupService()
-        
+        setupSnoozeState()
+
         // Autoconnect if server is configured and autoconnect is enabled
         if settings.isConfigured && settings.autoConnect {
             // Delay slightly to ensure UI is ready
@@ -94,5 +98,102 @@ class NtfyViewModel: ObservableObject {
                 self?.hasUnreadMessages = !newMessages.isEmpty
             }
             .store(in: &cancellables)
+    }
+
+    // MARK: - Snooze Management
+
+    private func setupSnoozeState() {
+        // Initialize snooze state from settings
+        isSnoozed = settings.isCurrentlySnoozed
+        snoozeTimeRemaining = settings.snoozeTimeRemaining
+
+        // Setup timer if snooze is active
+        if settings.isCurrentlySnoozed {
+            startSnoozeTimer()
+        } else if settings.isSnoozed && !settings.isCurrentlySnoozed {
+            // Snooze has expired, clear it
+            clearSnooze()
+        }
+    }
+
+    func snoozeNotifications(duration: SnoozeDuration, customDuration: TimeInterval? = nil) {
+        let snoozeInterval: TimeInterval
+
+        if duration == .custom, let customDuration = customDuration {
+            snoozeInterval = customDuration
+        } else {
+            snoozeInterval = duration.timeInterval
+        }
+
+        let endTime = Date().addingTimeInterval(snoozeInterval)
+
+        // Update settings
+        settings.isSnoozed = true
+        settings.snoozeEndTime = endTime
+        updateSettings(settings)
+
+        // Update published properties
+        isSnoozed = true
+        snoozeTimeRemaining = snoozeInterval
+
+        // Start countdown timer
+        startSnoozeTimer()
+
+        print("🔕 Notifications snoozed for \(duration.displayName) until \(endTime)")
+    }
+
+    func clearSnooze() {
+        // Update settings
+        settings.isSnoozed = false
+        settings.snoozeEndTime = nil
+        updateSettings(settings)
+
+        // Update published properties
+        isSnoozed = false
+        snoozeTimeRemaining = nil
+
+        // Stop timer
+        snoozeTimer?.invalidate()
+        snoozeTimer = nil
+
+        print("🔔 Snooze cleared - notifications enabled")
+    }
+
+    private func startSnoozeTimer() {
+        snoozeTimer?.invalidate()
+
+        snoozeTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
+            guard let self = self else { return }
+
+            Task { @MainActor [weak self] in
+                guard let self = self else { return }
+
+                if let remaining = self.settings.snoozeTimeRemaining, remaining > 0 {
+                    self.snoozeTimeRemaining = remaining
+                } else {
+                    // Snooze has expired
+                    self.clearSnooze()
+                }
+            }
+        }
+    }
+
+    var snoozeStatusText: String {
+        guard isSnoozed, let remaining = snoozeTimeRemaining else {
+            return "Notifications enabled"
+        }
+
+        if remaining <= 0 {
+            return "Snooze expiring..."
+        }
+
+        let hours = Int(remaining) / 3600
+        let minutes = Int(remaining) % 3600 / 60
+
+        if hours > 0 {
+            return "Snoozed for \(hours)h \(minutes)m"
+        } else {
+            return "Snoozed for \(minutes)m"
+        }
     }
 }

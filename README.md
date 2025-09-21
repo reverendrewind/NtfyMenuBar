@@ -24,6 +24,7 @@ A native macOS menu bar application for [ntfy](https://ntfy.sh) notifications. G
 - **Smart Filtering**: Multi-selection filters for topics and priorities with dropdown interface
 - **Message Grouping**: Organize messages by topic or priority with collapsible sections
 - **Powerful Search**: Search across message content, titles, topics, and tags
+- **Notification Snoozing**: Temporarily silence notifications with 8 preset durations or custom timing
 - **Access Token Management**: Generate and manage ntfy access tokens directly from the app
 - **Customizable Settings**: Configure notification preferences, message limits, appearance, and auto-connect
 - **Connection Stability**: Improved SSE handling with auto-reconnect and keepalive timers
@@ -39,6 +40,7 @@ A native macOS menu bar application for [ntfy](https://ntfy.sh) notifications. G
 *Dashboard Features*
 - Shows server URL and topic in header when connected
 - Connection status indicator (green=connected, red=disconnected, orange=not configured)
+- Notification snooze controls with real-time countdown and status display
 - Real-time message list with empty state when no notifications
 - Advanced filtering and search interface with compact dropdown menus
 - Message grouping by topic or priority with collapsible sections
@@ -157,6 +159,35 @@ The dashboard provides advanced message management capabilities:
 - **⌘+Delete**: Clear all messages
 - **⌘+D**: Toggle connection
 - **⌘+,**: Open settings
+
+### Notification Snoozing
+
+Temporarily silence notifications while still receiving and displaying messages in the dashboard:
+
+**Snooze Durations:**
+- **5 minutes**: Quick short-term snooze
+- **15 minutes**: Brief meeting or break
+- **30 minutes**: Default duration for most situations
+- **1 hour**: Extended focus time
+- **2 hours**: Longer work sessions
+- **4 hours**: Half-day quiet period
+- **8 hours**: Full work day or sleep
+- **Until tomorrow**: Overnight or until next day
+- **Custom**: User-defined duration (framework ready)
+
+**Snooze Controls:**
+- **Dashboard**: Bell icon in header with dropdown menu and status bar
+- **Menu Bar**: Right-click context menu with snooze submenu
+- **Visual Feedback**: Menu bar icon changes to bell.slash when snoozed
+- **Real-time Countdown**: Live display of remaining snooze time
+- **Auto-expiration**: Snooze automatically clears when time expires
+- **Quick Clear**: One-click snooze cancellation from dashboard or menu
+
+**How It Works:**
+- Messages continue to be received and displayed in the dashboard
+- System notifications are blocked while snooze is active
+- Snooze state persists across app restarts
+- Orange status bar appears in dashboard showing remaining time
 
 ### Enhanced Notifications
 Once configured and connected, you'll receive rich, branded notifications featuring:
@@ -502,6 +533,36 @@ curl -X POST https://your-ntfy-server.com/your-topic \
 - **Discussions**: [GitHub Discussions](https://github.com/reverendrewind/NtfyMenuBar/discussions)
 - **ntfy Documentation**: [ntfy.sh/docs](https://ntfy.sh/docs)
 - **Proxmox VE Notifications**: [PVE Docs](https://pve.proxmox.com/pve-docs/chapter-notifications.html)
+
+## Recent Changes
+
+### v2.4.0 - Notification Snoozing & Bug Fixes
+- ✅ **Added comprehensive notification snoozing system**
+  - 8 preset durations: 5min, 15min, 30min, 1hr, 2hr, 4hr, 8hr, "Until tomorrow"
+  - Real-time countdown display and auto-expiration
+  - Dashboard and menu bar controls with visual feedback
+  - Snooze state persistence across app restarts
+- ✅ **Fixed dashboard header display**
+  - Now shows actual server URL instead of "Primary server"
+  - Improved server identification in multi-server setups
+- ✅ **Fixed snooze functionality**
+  - Resolved issue where notifications continued during snooze
+  - Proper settings synchronization between components
+- ✅ **Enhanced Swift 6 compatibility**
+  - Fixed concurrency warnings and actor isolation issues
+  - Improved timer management for snooze countdown
+
+### v2.3.0 - Message Filtering & Grouping
+- ✅ **Advanced message filtering system**
+  - Multi-selection filters for topics and priorities
+  - Compact dropdown menus replace large filter panels
+  - Comprehensive search across content, titles, topics, and tags
+- ✅ **Message grouping with collapsible sections**
+  - Group by topic or priority with visual indicators
+  - Expand/collapse functionality for better organization
+- ✅ **Improved message layout density**
+  - Reduced spacing between messages for better space utilization
+  - Maintained readability while maximizing content display
 
 ## Acknowledgments
 

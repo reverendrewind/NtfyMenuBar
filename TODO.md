@@ -19,7 +19,7 @@
 - [x] Customizable notification sounds *(Completed)*
 - [x] Message grouping by topic/priority *(Completed)*
 - [x] Keyboard shortcuts for common actions *(Completed)*
-- [ ] Notification snoozing
+- [x] Notification snoozing *(Completed)*
 - [ ] Do Not Disturb scheduling
 
 #### Connection Improvements - Client-Side ✅

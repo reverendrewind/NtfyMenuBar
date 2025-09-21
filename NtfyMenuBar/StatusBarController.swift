@@ -22,6 +22,7 @@ class StatusBarController: NSObject, ObservableObject, NSWindowDelegate {
     let themeManager: ThemeManager
     private var dashboardWindow: NSWindow?
     private var settingsWindow: NSWindow?
+    private var cancellables = Set<AnyCancellable>()
     
     init(viewModel: NtfyViewModel, themeManager: ThemeManager) {
         self.viewModel = viewModel
@@ -29,12 +30,13 @@ class StatusBarController: NSObject, ObservableObject, NSWindowDelegate {
         super.init()
         setupStatusItem()
         setupNotificationObservers()
-        
+        setupSnoozeObservers()
+
         // Set up settings action closure
         viewModel.openSettingsAction = { [weak self] in
             self?.openSettings()
         }
-        
+
         // Initialize theme from settings
         themeManager.setTheme(viewModel.settings.appearanceMode)
     }
@@ -63,6 +65,36 @@ class StatusBarController: NSObject, ObservableObject, NSWindowDelegate {
             name: .openDashboardFromNotification,
             object: nil
         )
+    }
+
+    private func setupSnoozeObservers() {
+        // Observe snooze state changes
+        viewModel.$isSnoozed
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                self?.updateStatusIcon()
+            }
+            .store(in: &cancellables)
+    }
+
+    private func updateStatusIcon() {
+        guard let button = statusItem?.button else { return }
+
+        // Set the appropriate icon based on snooze state
+        if viewModel.isSnoozed {
+            // Use bell.slash for snoozed state
+            let image = NSImage(systemSymbolName: "bell.slash.fill", accessibilityDescription: "Notifications snoozed")
+            image?.isTemplate = true
+            button.image = image
+            button.toolTip = "Notifications snoozed - \(viewModel.snoozeStatusText)"
+        } else {
+            // Use normal bell icon
+            if let image = NSImage(named: "MenuBarIcon") {
+                image.isTemplate = true
+                button.image = image
+                button.toolTip = "ntfy Notifications"
+            }
+        }
     }
     
     @objc private func handleOpenDashboardFromNotification() {
@@ -195,7 +227,36 @@ class StatusBarController: NSObject, ObservableObject, NSWindowDelegate {
         }
         
         menu.addItem(NSMenuItem.separator())
-        
+
+        // Snooze section
+        if viewModel.isSnoozed {
+            // Show snooze status and clear option
+            let snoozeStatusItem = NSMenuItem(title: "🔕 \(viewModel.snoozeStatusText)", action: nil, keyEquivalent: "")
+            snoozeStatusItem.isEnabled = false
+            menu.addItem(snoozeStatusItem)
+
+            let clearSnoozeItem = NSMenuItem(title: "Clear Snooze", action: #selector(clearSnooze), keyEquivalent: "")
+            clearSnoozeItem.target = self
+            menu.addItem(clearSnoozeItem)
+        } else {
+            // Show snooze submenu
+            let snoozeSubmenu = NSMenu()
+
+            // Add snooze durations
+            for duration in SnoozeDuration.allCases.filter({ $0 != .custom }) {
+                let item = NSMenuItem(title: duration.displayName, action: #selector(snoozeNotifications(_:)), keyEquivalent: "")
+                item.target = self
+                item.representedObject = duration
+                snoozeSubmenu.addItem(item)
+            }
+
+            let snoozeItem = NSMenuItem(title: "Snooze Notifications", action: nil, keyEquivalent: "")
+            snoozeItem.submenu = snoozeSubmenu
+            menu.addItem(snoozeItem)
+        }
+
+        menu.addItem(NSMenuItem.separator())
+
         // Settings item
         let settingsItem = NSMenuItem(title: "Settings...", action: #selector(openSettings), keyEquivalent: ",")
         settingsItem.target = self
@@ -295,6 +356,15 @@ class StatusBarController: NSObject, ObservableObject, NSWindowDelegate {
     
     @objc private func quit() {
         NSApplication.shared.terminate(nil)
+    }
+
+    @objc private func snoozeNotifications(_ sender: NSMenuItem) {
+        guard let duration = sender.representedObject as? SnoozeDuration else { return }
+        viewModel.snoozeNotifications(duration: duration)
+    }
+
+    @objc private func clearSnooze() {
+        viewModel.clearSnooze()
     }
     
     // MARK: - Window Positioning
