@@ -7,6 +7,7 @@
 
 import Foundation
 import Combine
+import Intents
 
 @MainActor
 class NtfyViewModel: ObservableObject {
@@ -157,6 +158,10 @@ class NtfyViewModel: ObservableObject {
 
         // Start countdown timer
         startSnoozeTimer()
+
+        // Donate shortcut for Siri
+        let minutes = Int(snoozeInterval / 60)
+        ShortcutsDonator.donateSnooze(minutes: minutes)
 
         print("🔕 Notifications snoozed for \(duration.displayName) until \(endTime)")
     }

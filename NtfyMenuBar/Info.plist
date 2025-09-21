@@ -14,5 +14,19 @@
 	<true/>
 	<key>OSAScriptingDefinition</key>
 	<string>NtfyMenuBar.sdef</string>
+	<key>NSSupportsLiveActivities</key>
+	<false/>
+	<key>NSUserActivityTypes</key>
+	<array>
+		<string>SendNtfyMessageIntent</string>
+		<string>SnoozeNotificationsIntent</string>
+	</array>
+	<key>INIntentsSupported</key>
+	<array>
+		<string>SendNtfyMessageIntent</string>
+		<string>SnoozeNotificationsIntent</string>
+	</array>
+	<key>INIntentsRestrictedWhileLocked</key>
+	<array/>
 </dict>
 </plist>
