@@ -130,7 +130,7 @@ struct SettingsView: View {
             .padding(20)
             .padding(.top, 0)
         }
-        .frame(width: 550, height: 650)
+        .frame(width: 700, height: 650)
         .background(Color.theme.windowBackground)
         .onAppear {
             loadCurrentSettings()
@@ -702,65 +702,88 @@ struct SettingsView: View {
                             .font(.subheadline)
                             .fontWeight(.medium)
 
-                        Grid(alignment: .leading) {
-                            GridRow {
-                                Text("Total Messages:")
-                                    .font(.caption)
-                                Text("\(stats.totalMessages)")
-                                    .font(.caption)
-                                    .fontWeight(.medium)
+                        HStack(spacing: 20) {
+                            VStack(alignment: .leading, spacing: 8) {
+                                HStack {
+                                    Text("Total Messages:")
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                    Spacer()
+                                    Text("\(stats.totalMessages)")
+                                        .font(.caption)
+                                        .fontWeight(.medium)
+                                }
+
+                                HStack {
+                                    Text("Archive Size:")
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                    Spacer()
+                                    Text(stats.formattedSize)
+                                        .font(.caption)
+                                        .fontWeight(.medium)
+                                }
                             }
 
-                            GridRow {
-                                Text("Archive Size:")
-                                    .font(.caption)
-                                Text(stats.formattedSize)
-                                    .font(.caption)
-                                    .fontWeight(.medium)
-                            }
+                            VStack(alignment: .leading, spacing: 8) {
+                                HStack {
+                                    Text("Date Range:")
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                    Spacer()
+                                    Text(stats.dateRange)
+                                        .font(.caption)
+                                        .fontWeight(.medium)
+                                        .lineLimit(1)
+                                        .truncationMode(.middle)
+                                }
 
-                            GridRow {
-                                Text("Date Range:")
-                                    .font(.caption)
-                                Text(stats.dateRange)
-                                    .font(.caption)
-                                    .fontWeight(.medium)
-                            }
-
-                            GridRow {
-                                Text("Archive Files:")
-                                    .font(.caption)
-                                Text("\(stats.archiveFilesCount)")
-                                    .font(.caption)
-                                    .fontWeight(.medium)
+                                HStack {
+                                    Text("Archive Files:")
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                    Spacer()
+                                    Text("\(stats.archiveFilesCount)")
+                                        .font(.caption)
+                                        .fontWeight(.medium)
+                                }
                             }
                         }
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 8)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 12)
                         .background(Color.secondary.opacity(0.1))
                         .cornerRadius(8)
 
                         // Top topics
                         if !stats.messagesByTopic.isEmpty {
-                            VStack(alignment: .leading, spacing: 4) {
+                            VStack(alignment: .leading, spacing: 8) {
                                 Text("Top Topics:")
                                     .font(.caption)
                                     .fontWeight(.medium)
+                                    .foregroundColor(.secondary)
 
-                                let sortedTopics = stats.messagesByTopic.sorted { $0.value > $1.value }.prefix(5)
-                                ForEach(Array(sortedTopics), id: \.key) { topic, count in
-                                    HStack {
-                                        Text("• \(topic)")
-                                            .font(.caption2)
-                                        Spacer()
-                                        Text("\(count)")
-                                            .font(.caption2)
-                                            .foregroundColor(.secondary)
+                                let sortedTopics = stats.messagesByTopic.sorted { $0.value > $1.value }.prefix(8)
+                                LazyVGrid(columns: [
+                                    GridItem(.flexible()),
+                                    GridItem(.flexible())
+                                ], spacing: 6) {
+                                    ForEach(Array(sortedTopics), id: \.key) { topic, count in
+                                        HStack {
+                                            Text("• \(topic)")
+                                                .font(.caption2)
+                                                .lineLimit(1)
+                                                .truncationMode(.tail)
+                                            Spacer()
+                                            Text("\(count)")
+                                                .font(.caption2)
+                                                .fontWeight(.medium)
+                                                .foregroundColor(.blue)
+                                        }
                                     }
                                 }
                             }
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 8)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 12)
                             .background(Color.blue.opacity(0.1))
                             .cornerRadius(8)
                         }
@@ -791,6 +814,7 @@ struct SettingsView: View {
 
                     HStack {
                         Text("Delete messages older than:")
+                            .font(.caption)
                         Spacer()
                         Picker("Days", selection: $archiveClearDays) {
                             Text("7 days").tag(7)
@@ -799,7 +823,7 @@ struct SettingsView: View {
                             Text("1 year").tag(365)
                         }
                         .pickerStyle(.menu)
-                        .frame(width: 100)
+                        .frame(width: 120)
                     }
 
                     Button("Clear Old Messages") {
