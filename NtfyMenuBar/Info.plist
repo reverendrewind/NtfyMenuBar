@@ -10,5 +10,9 @@
 	<string>ntfy</string>
 	<key>NSHumanReadableCopyright</key>
 	<string>© 2025 Rimskij Papa</string>
+	<key>NSAppleScriptEnabled</key>
+	<true/>
+	<key>OSAScriptingDefinition</key>
+	<string>NtfyMenuBar.sdef</string>
 </dict>
 </plist>

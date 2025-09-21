@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE dictionary SYSTEM "file://localhost/System/Library/DTDs/sdef.dtd">
+<dictionary title="NtfyMenuBar Terminology">
+
+    <!-- Application Suite -->
+    <suite name="NtfyMenuBar Suite" code="NTFY" description="NtfyMenuBar application scripting support">
+
+        <class name="application" code="capp" description="The NtfyMenuBar application">
+            <cocoa class="NSApplication"/>
+
+            <!-- Application Properties -->
+            <property name="connected" code="conn" type="boolean" access="r" description="Is the app connected to the ntfy server?">
+                <cocoa key="scriptingIsConnected"/>
+            </property>
+
+            <property name="server url" code="surl" type="text" access="r" description="The configured ntfy server URL">
+                <cocoa key="scriptingServerURL"/>
+            </property>
+
+            <property name="current topics" code="tops" type="text" access="r" description="Comma-separated list of subscribed topics">
+                <cocoa key="scriptingCurrentTopics"/>
+            </property>
+
+            <property name="message count" code="mcnt" type="integer" access="r" description="Number of messages in the current session">
+                <cocoa key="scriptingMessageCount"/>
+            </property>
+
+            <property name="snoozed" code="snoz" type="boolean" access="rw" description="Are notifications currently snoozed?">
+                <cocoa key="scriptingIsSnoozed"/>
+            </property>
+
+            <!-- Message Elements -->
+            <element type="message" access="r">
+                <cocoa key="scriptingMessages"/>
+            </element>
+        </class>
+
+        <!-- Message Class -->
+        <class name="message" code="NMSG" description="A notification message" plural="messages">
+            <cocoa class="ScriptableMessage"/>
+
+            <property name="id" code="ID  " type="text" access="r" description="Unique message identifier">
+                <cocoa key="messageId"/>
+            </property>
+
+            <property name="title" code="titl" type="text" access="r" description="Message title">
+                <cocoa key="title"/>
+            </property>
+
+            <property name="body" code="body" type="text" access="r" description="Message body content">
+                <cocoa key="body"/>
+            </property>
+
+            <property name="topic" code="topc" type="text" access="r" description="Message topic">
+                <cocoa key="topic"/>
+            </property>
+
+            <property name="priority" code="prio" type="integer" access="r" description="Message priority (1-5)">
+                <cocoa key="priority"/>
+            </property>
+
+            <property name="date" code="date" type="date" access="r" description="When the message was received">
+                <cocoa key="date"/>
+            </property>
+
+            <property name="tags" code="tags" type="text" access="r" description="Comma-separated message tags">
+                <cocoa key="tags"/>
+            </property>
+        </class>
+
+        <!-- Commands -->
+
+        <!-- Send Message Command -->
+        <command name="send message" code="NTFYsend" description="Send a message to ntfy server">
+            <cocoa class="SendMessageScriptCommand"/>
+            <direct-parameter type="text" description="The message to send"/>
+            <parameter name="to topic" code="topc" type="text" description="The topic to send to">
+                <cocoa key="topic"/>
+            </parameter>
+            <parameter name="with title" code="titl" type="text" optional="yes" description="Optional message title">
+                <cocoa key="title"/>
+            </parameter>
+            <parameter name="priority" code="prio" type="integer" optional="yes" description="Message priority (1-5, default 3)">
+                <cocoa key="priority"/>
+            </parameter>
+            <parameter name="tags" code="tags" type="text" optional="yes" description="Comma-separated tags">
+                <cocoa key="tags"/>
+            </parameter>
+            <result type="boolean" description="true if message was sent successfully"/>
+        </command>
+
+        <!-- Get Messages Command -->
+        <command name="get messages" code="NTFYgetm" description="Get recent messages">
+            <cocoa class="GetMessagesScriptCommand"/>
+            <parameter name="from topic" code="topc" type="text" optional="yes" description="Filter by topic">
+                <cocoa key="topic"/>
+            </parameter>
+            <parameter name="limit" code="limt" type="integer" optional="yes" description="Maximum number of messages to return">
+                <cocoa key="limit"/>
+            </parameter>
+            <result type="message" list="yes" description="List of messages"/>
+        </command>
+
+        <!-- Connection Commands -->
+        <command name="connect" code="NTFYconn" description="Connect to the ntfy server">
+            <cocoa class="ConnectScriptCommand"/>
+            <result type="boolean" description="true if connection was successful"/>
+        </command>
+
+        <command name="disconnect" code="NTFYdisc" description="Disconnect from the ntfy server">
+            <cocoa class="DisconnectScriptCommand"/>
+        </command>
+
+        <!-- Snooze Commands -->
+        <command name="snooze notifications" code="NTFYsnoz" description="Snooze notifications for a duration">
+            <cocoa class="SnoozeScriptCommand"/>
+            <parameter name="for minutes" code="mins" type="integer" description="Duration in minutes">
+                <cocoa key="minutes"/>
+            </parameter>
+        </command>
+
+        <command name="unsnooze notifications" code="NTFYunsz" description="Cancel notification snooze">
+            <cocoa class="UnsnoozeScriptCommand"/>
+        </command>
+
+        <!-- Clear Messages Command -->
+        <command name="clear messages" code="NTFYclrm" description="Clear all current messages">
+            <cocoa class="ClearMessagesScriptCommand"/>
+        </command>
+
+    </suite>
+
+</dictionary>
