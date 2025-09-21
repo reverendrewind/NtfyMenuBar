@@ -552,8 +552,16 @@ struct ContentView: View {
                 // Export button
                 Menu {
                     ForEach(ExportFormat.allCases, id: \.self) { format in
-                        Button("Export as \(format.displayName)") {
-                            exportMessages(format: format)
+                        Button("Export visible as \(format.displayName)") {
+                            exportMessages(format: format, scope: .visible)
+                        }
+                    }
+
+                    Divider()
+
+                    ForEach(ExportFormat.allCases, id: \.self) { format in
+                        Button("Export all archived as \(format.displayName)") {
+                            exportMessages(format: format, scope: .allArchived)
                         }
                     }
                 } label: {
@@ -689,51 +697,69 @@ struct ContentView: View {
 
     // MARK: - Export Functions
 
-    private func exportMessages(format: ExportFormat) {
-        let messagesToExport = hasActiveFilters ? filteredMessages : viewModel.messages
-        let scope: ExportScope = hasActiveFilters ? .filtered : .all
+    enum ExportScopeType {
+        case visible
+        case allArchived
+    }
 
-        ExportManager.shared.exportMessages(
-            messagesToExport,
-            format: format,
-            scope: scope
-        ) { result in
-            DispatchQueue.main.async {
-                switch result {
-                case .success(let url):
-                    print("✅ Successfully exported \(messagesToExport.count) messages to \(url.path)")
+    private func exportMessages(format: ExportFormat, scope: ExportScopeType) {
+        Task {
+            let messagesToExport: [NtfyMessage]
+            let exportScope: ExportScope
 
-                    // Show success notification
-                    let content = UNMutableNotificationContent()
-                    content.title = "Export Complete"
-                    content.body = "Exported \(messagesToExport.count) messages as \(format.displayName)"
-                    content.sound = .default
+            switch scope {
+            case .visible:
+                messagesToExport = hasActiveFilters ? filteredMessages : viewModel.messages
+                exportScope = hasActiveFilters ? .filtered : .all
+            case .allArchived:
+                messagesToExport = await viewModel.loadAllArchivedMessages()
+                exportScope = .all
+            }
 
-                    let request = UNNotificationRequest(
-                        identifier: "export_success",
-                        content: content,
-                        trigger: nil
-                    )
+            await MainActor.run {
+                ExportManager.shared.exportMessages(
+                    messagesToExport,
+                    format: format,
+                    scope: exportScope
+                ) { result in
+                    DispatchQueue.main.async {
+                        switch result {
+                        case .success(let url):
+                            print("✅ Successfully exported \(messagesToExport.count) messages to \(url.path)")
 
-                    UNUserNotificationCenter.current().add(request) { error in
-                        if let error = error {
-                            print("❌ Failed to show export notification: \(error)")
+                            // Show success notification
+                            let content = UNMutableNotificationContent()
+                            content.title = "Export Complete"
+                            content.body = "Exported \(messagesToExport.count) messages as \(format.displayName)"
+                            content.sound = .default
+
+                            let request = UNNotificationRequest(
+                                identifier: "export_success",
+                                content: content,
+                                trigger: nil
+                            )
+
+                            UNUserNotificationCenter.current().add(request) { error in
+                                if let error = error {
+                                    print("❌ Failed to show export notification: \(error)")
+                                }
+                            }
+
+                            // Optionally reveal in Finder
+                            NSWorkspace.shared.activateFileViewerSelecting([url])
+
+                        case .failure(let error):
+                            print("❌ Failed to export messages: \(error.localizedDescription)")
+
+                            // Show error alert
+                            let alert = NSAlert()
+                            alert.messageText = "Export Failed"
+                            alert.informativeText = error.localizedDescription
+                            alert.alertStyle = .critical
+                            alert.addButton(withTitle: "OK")
+                            alert.runModal()
                         }
                     }
-
-                    // Optionally reveal in Finder
-                    NSWorkspace.shared.activateFileViewerSelecting([url])
-
-                case .failure(let error):
-                    print("❌ Failed to export messages: \(error.localizedDescription)")
-
-                    // Show error alert
-                    let alert = NSAlert()
-                    alert.messageText = "Export Failed"
-                    alert.informativeText = error.localizedDescription
-                    alert.alertStyle = .critical
-                    alert.addButton(withTitle: "OK")
-                    alert.runModal()
                 }
             }
         }

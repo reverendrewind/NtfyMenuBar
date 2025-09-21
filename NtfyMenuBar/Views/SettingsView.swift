@@ -48,11 +48,18 @@ struct SettingsView: View {
     @State private var dndEndTime: Date = Date()
     @State private var dndDaysOfWeek: Set<Int> = Set([1, 2, 3, 4, 5, 6, 7])
 
+    // Archive management state
+    @State private var archiveStatistics: ArchiveStatistics?
+    @State private var isLoadingArchiveStats: Bool = false
+    @State private var showingClearArchiveAlert: Bool = false
+    @State private var archiveClearDays: Int = 30
+
     enum SettingsTab: String, CaseIterable {
         case connection = "Connection"
         case tokens = "Access tokens"
         case fallbacks = "Fallback servers"
         case dnd = "Do Not Disturb"
+        case archive = "Message Archive"
         case preferences = "Preferences"
 
         var systemImage: String {
@@ -61,6 +68,7 @@ struct SettingsView: View {
             case .tokens: return "key.fill"
             case .fallbacks: return "server.rack"
             case .dnd: return "moon.zzz"
+            case .archive: return "archivebox"
             case .preferences: return "gearshape"
             }
         }
@@ -94,6 +102,8 @@ struct SettingsView: View {
                         fallbackServersView
                     case .dnd:
                         dndSettingsView
+                    case .archive:
+                        archiveSettingsView
                     case .preferences:
                         preferencesSettingsView
                     }
@@ -667,6 +677,154 @@ struct SettingsView: View {
         }
     }
 
+    private var archiveSettingsView: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            VStack(alignment: .leading, spacing: 12) {
+                Text("Message Archive")
+                    .font(.headline)
+
+                Text("Messages are automatically archived for persistent storage and can be exported at any time.")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+
+                // Archive statistics
+                if isLoadingArchiveStats {
+                    HStack {
+                        ProgressView()
+                            .scaleEffect(0.8)
+                        Text("Loading archive statistics...")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                } else if let stats = archiveStatistics {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Archive Statistics")
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+
+                        Grid(alignment: .leading) {
+                            GridRow {
+                                Text("Total Messages:")
+                                    .font(.caption)
+                                Text("\(stats.totalMessages)")
+                                    .font(.caption)
+                                    .fontWeight(.medium)
+                            }
+
+                            GridRow {
+                                Text("Archive Size:")
+                                    .font(.caption)
+                                Text(stats.formattedSize)
+                                    .font(.caption)
+                                    .fontWeight(.medium)
+                            }
+
+                            GridRow {
+                                Text("Date Range:")
+                                    .font(.caption)
+                                Text(stats.dateRange)
+                                    .font(.caption)
+                                    .fontWeight(.medium)
+                            }
+
+                            GridRow {
+                                Text("Archive Files:")
+                                    .font(.caption)
+                                Text("\(stats.archiveFilesCount)")
+                                    .font(.caption)
+                                    .fontWeight(.medium)
+                            }
+                        }
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 8)
+                        .background(Color.secondary.opacity(0.1))
+                        .cornerRadius(8)
+
+                        // Top topics
+                        if !stats.messagesByTopic.isEmpty {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("Top Topics:")
+                                    .font(.caption)
+                                    .fontWeight(.medium)
+
+                                let sortedTopics = stats.messagesByTopic.sorted { $0.value > $1.value }.prefix(5)
+                                ForEach(Array(sortedTopics), id: \.key) { topic, count in
+                                    HStack {
+                                        Text("• \(topic)")
+                                            .font(.caption2)
+                                        Spacer()
+                                        Text("\(count)")
+                                            .font(.caption2)
+                                            .foregroundColor(.secondary)
+                                    }
+                                }
+                            }
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 8)
+                            .background(Color.blue.opacity(0.1))
+                            .cornerRadius(8)
+                        }
+                    }
+                }
+
+                Button("Refresh Statistics") {
+                    loadArchiveStatistics()
+                }
+                .buttonStyle(.bordered)
+                .disabled(isLoadingArchiveStats)
+            }
+
+            Divider()
+
+            VStack(alignment: .leading, spacing: 12) {
+                Text("Archive Management")
+                    .font(.headline)
+
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Clear old messages")
+                        .font(.subheadline)
+                        .fontWeight(.medium)
+
+                    Text("Remove archived messages older than the specified number of days.")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+
+                    HStack {
+                        Text("Delete messages older than:")
+                        Spacer()
+                        Picker("Days", selection: $archiveClearDays) {
+                            Text("7 days").tag(7)
+                            Text("30 days").tag(30)
+                            Text("90 days").tag(90)
+                            Text("1 year").tag(365)
+                        }
+                        .pickerStyle(.menu)
+                        .frame(width: 100)
+                    }
+
+                    Button("Clear Old Messages") {
+                        showingClearArchiveAlert = true
+                    }
+                    .buttonStyle(.bordered)
+                    .foregroundColor(.red)
+                }
+            }
+        }
+        .onAppear {
+            if archiveStatistics == nil {
+                loadArchiveStatistics()
+            }
+        }
+        .alert("Clear Archive Messages", isPresented: $showingClearArchiveAlert) {
+            Button("Cancel", role: .cancel) { }
+            Button("Clear", role: .destructive) {
+                clearOldArchivedMessages()
+            }
+        } message: {
+            Text("Are you sure you want to delete all archived messages older than \(archiveClearDays) days? This action cannot be undone.")
+        }
+    }
+
     // MARK: - Private Methods
 
     private var isValidConfiguration: Bool {
@@ -935,6 +1093,25 @@ struct SettingsView: View {
             } else {
                 print("🔊 Testing sound: \(notificationSound.displayName)")
             }
+        }
+    }
+
+    private func loadArchiveStatistics() {
+        isLoadingArchiveStats = true
+        Task {
+            let stats = await viewModel.getArchiveStatistics()
+            await MainActor.run {
+                self.archiveStatistics = stats
+                self.isLoadingArchiveStats = false
+            }
+        }
+    }
+
+    private func clearOldArchivedMessages() {
+        viewModel.clearOldArchivedMessages(olderThan: archiveClearDays)
+        // Refresh statistics after clearing
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+            loadArchiveStatistics()
         }
     }
 }

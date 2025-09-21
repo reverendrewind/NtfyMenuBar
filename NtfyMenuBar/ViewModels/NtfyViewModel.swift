@@ -34,6 +34,7 @@ class NtfyViewModel: ObservableObject {
         self.settings = SettingsManager.loadSettings()
         setupService()
         setupSnoozeState()
+        loadRecentArchivedMessages()
 
         // Autoconnect if server is configured and autoconnect is enabled
         if settings.isConfigured && settings.autoConnect {
@@ -196,5 +197,48 @@ class NtfyViewModel: ObservableObject {
         } else {
             return "Snoozed for \(minutes)m"
         }
+    }
+
+    // MARK: - Message Archive Management
+
+    private func loadRecentArchivedMessages() {
+        Task {
+            // Load recent archived messages (last 7 days) to populate the UI on startup
+            let weekAgo = Date().addingTimeInterval(-7 * 24 * 60 * 60)
+            let recentMessages = await MessageArchive.shared.getArchivedMessages(since: weekAgo)
+
+            await MainActor.run {
+                // Only show the most recent messages up to maxRecentMessages
+                self.messages = Array(recentMessages.prefix(self.settings.maxRecentMessages))
+                self.hasUnreadMessages = !self.messages.isEmpty
+                print("📂 Loaded \(self.messages.count) recent archived messages")
+            }
+        }
+    }
+
+    func loadAllArchivedMessages() async -> [NtfyMessage] {
+        return await MessageArchive.shared.getAllArchivedMessages()
+    }
+
+    func getArchiveStatistics() async -> ArchiveStatistics {
+        return await MessageArchive.shared.getArchiveStatistics()
+    }
+
+    func clearOldArchivedMessages(olderThan days: Int) {
+        Task {
+            let cutoffDate = Date().addingTimeInterval(-TimeInterval(days * 24 * 60 * 60))
+            await MessageArchive.shared.clearOldMessages(olderThan: cutoffDate)
+
+            // Reload recent messages
+            await MainActor.run {
+                loadRecentArchivedMessages()
+            }
+
+            print("🗑️ Cleared archived messages older than \(days) days")
+        }
+    }
+
+    func exportAllArchivedMessages() async -> [NtfyMessage] {
+        return await MessageArchive.shared.getAllArchivedMessages()
     }
 }

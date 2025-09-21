@@ -382,8 +382,11 @@ class NtfyService: ObservableObject {
                 self.updateConnectionQualityBasedOnActivity()
 
                 self.messages.insert(ntfyMessage, at: 0)
-                
-                // Limit stored messages
+
+                // Archive the message for persistent storage
+                MessageArchive.shared.archiveMessage(ntfyMessage)
+
+                // Limit stored messages in memory
                 if self.messages.count > self.settings.maxRecentMessages {
                     self.messages = Array(self.messages.prefix(self.settings.maxRecentMessages))
                 }
