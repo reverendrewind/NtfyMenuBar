@@ -7,6 +7,7 @@
 
 import SwiftUI
 import UserNotifications
+import AppKit
 
 struct SettingsView: View {
     @EnvironmentObject var viewModel: NtfyViewModel
@@ -800,6 +801,47 @@ struct SettingsView: View {
             Divider()
 
             VStack(alignment: .leading, spacing: 12) {
+                Text("Export Messages")
+                    .font(.headline)
+
+                Text("Export your messages to CSV or JSON format for analysis or backup.")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Recent messages (last 7 days)")
+                        .font(.subheadline)
+                        .fontWeight(.medium)
+
+                    HStack(spacing: 12) {
+                        ForEach(ExportFormat.allCases, id: \.self) { format in
+                            Button("Export as \(format.displayName)") {
+                                exportRecentMessages(format: format)
+                            }
+                            .buttonStyle(.bordered)
+                        }
+                    }
+                }
+
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("All archived messages")
+                        .font(.subheadline)
+                        .fontWeight(.medium)
+
+                    HStack(spacing: 12) {
+                        ForEach(ExportFormat.allCases, id: \.self) { format in
+                            Button("Export all as \(format.displayName)") {
+                                exportAllArchivedMessages(format: format)
+                            }
+                            .buttonStyle(.borderedProminent)
+                        }
+                    }
+                }
+            }
+
+            Divider()
+
+            VStack(alignment: .leading, spacing: 12) {
                 Text("Archive Management")
                     .font(.headline)
 
@@ -1136,6 +1178,82 @@ struct SettingsView: View {
         // Refresh statistics after clearing
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
             loadArchiveStatistics()
+        }
+    }
+
+    private func exportRecentMessages(format: ExportFormat) {
+        Task {
+            let weekAgo = Date().addingTimeInterval(-7 * 24 * 60 * 60)
+            let recentMessages = await MessageArchive.shared.getArchivedMessages(since: weekAgo)
+
+            await MainActor.run {
+                ExportManager.shared.exportMessages(
+                    recentMessages,
+                    format: format,
+                    scope: .all
+                ) { result in
+                    DispatchQueue.main.async {
+                        handleExportResult(result, messageCount: recentMessages.count, format: format)
+                    }
+                }
+            }
+        }
+    }
+
+    private func exportAllArchivedMessages(format: ExportFormat) {
+        Task {
+            let allMessages = await viewModel.loadAllArchivedMessages()
+
+            await MainActor.run {
+                ExportManager.shared.exportMessages(
+                    allMessages,
+                    format: format,
+                    scope: .all
+                ) { result in
+                    DispatchQueue.main.async {
+                        handleExportResult(result, messageCount: allMessages.count, format: format)
+                    }
+                }
+            }
+        }
+    }
+
+    private func handleExportResult(_ result: Result<URL, Error>, messageCount: Int, format: ExportFormat) {
+        switch result {
+        case .success(let url):
+            print("✅ Successfully exported \(messageCount) messages to \(url.path)")
+
+            // Show success notification
+            let content = UNMutableNotificationContent()
+            content.title = "Export Complete"
+            content.body = "Exported \(messageCount) messages as \(format.displayName)"
+            content.sound = .default
+
+            let request = UNNotificationRequest(
+                identifier: "export_success",
+                content: content,
+                trigger: nil
+            )
+
+            UNUserNotificationCenter.current().add(request) { error in
+                if let error = error {
+                    print("❌ Failed to show export notification: \(error)")
+                }
+            }
+
+            // Reveal in Finder
+            NSWorkspace.shared.activateFileViewerSelecting([url])
+
+        case .failure(let error):
+            print("❌ Failed to export messages: \(error.localizedDescription)")
+
+            // Show error alert
+            let alert = NSAlert()
+            alert.messageText = "Export Failed"
+            alert.informativeText = error.localizedDescription
+            alert.alertStyle = .critical
+            alert.addButton(withTitle: "OK")
+            alert.runModal()
         }
     }
 }

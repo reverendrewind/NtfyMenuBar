@@ -7,7 +7,6 @@
 
 import SwiftUI
 import Foundation
-import UserNotifications
 
 
 enum GroupingMode: String, CaseIterable {
@@ -549,28 +548,6 @@ struct ContentView: View {
             Spacer()
 
             if !viewModel.messages.isEmpty {
-                // Export button
-                Menu {
-                    ForEach(ExportFormat.allCases, id: \.self) { format in
-                        Button("Export visible as \(format.displayName)") {
-                            exportMessages(format: format, scope: .visible)
-                        }
-                    }
-
-                    Divider()
-
-                    ForEach(ExportFormat.allCases, id: \.self) { format in
-                        Button("Export all archived as \(format.displayName)") {
-                            exportMessages(format: format, scope: .allArchived)
-                        }
-                    }
-                } label: {
-                    Label("Export", systemImage: "square.and.arrow.up")
-                }
-                .menuStyle(.borderlessButton)
-                .font(.caption)
-                .help("Export messages to file")
-
                 if hasActiveFilters {
                     Button("Clear filters") {
                         clearAllFilters()
@@ -692,76 +669,6 @@ struct ContentView: View {
         case 4: return "High (4)"
         case 5: return "Max (5)"
         default: return "Normal (3)"
-        }
-    }
-
-    // MARK: - Export Functions
-
-    enum ExportScopeType {
-        case visible
-        case allArchived
-    }
-
-    private func exportMessages(format: ExportFormat, scope: ExportScopeType) {
-        Task {
-            let messagesToExport: [NtfyMessage]
-            let exportScope: ExportScope
-
-            switch scope {
-            case .visible:
-                messagesToExport = hasActiveFilters ? filteredMessages : viewModel.messages
-                exportScope = hasActiveFilters ? .filtered : .all
-            case .allArchived:
-                messagesToExport = await viewModel.loadAllArchivedMessages()
-                exportScope = .all
-            }
-
-            await MainActor.run {
-                ExportManager.shared.exportMessages(
-                    messagesToExport,
-                    format: format,
-                    scope: exportScope
-                ) { result in
-                    DispatchQueue.main.async {
-                        switch result {
-                        case .success(let url):
-                            print("✅ Successfully exported \(messagesToExport.count) messages to \(url.path)")
-
-                            // Show success notification
-                            let content = UNMutableNotificationContent()
-                            content.title = "Export Complete"
-                            content.body = "Exported \(messagesToExport.count) messages as \(format.displayName)"
-                            content.sound = .default
-
-                            let request = UNNotificationRequest(
-                                identifier: "export_success",
-                                content: content,
-                                trigger: nil
-                            )
-
-                            UNUserNotificationCenter.current().add(request) { error in
-                                if let error = error {
-                                    print("❌ Failed to show export notification: \(error)")
-                                }
-                            }
-
-                            // Optionally reveal in Finder
-                            NSWorkspace.shared.activateFileViewerSelecting([url])
-
-                        case .failure(let error):
-                            print("❌ Failed to export messages: \(error.localizedDescription)")
-
-                            // Show error alert
-                            let alert = NSAlert()
-                            alert.messageText = "Export Failed"
-                            alert.informativeText = error.localizedDescription
-                            alert.alertStyle = .critical
-                            alert.addButton(withTitle: "OK")
-                            alert.runModal()
-                        }
-                    }
-                }
-            }
         }
     }
 
