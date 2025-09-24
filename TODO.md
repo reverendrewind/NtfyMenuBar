@@ -1,6 +1,6 @@
 # TODO - NtfyMenuBar
 
-*Last Updated: 2025-09-21*
+*Last Updated: 2025-09-24*
 *Feasibility Analysis Completed: 2025-01-20*
 
 📖 **See [CHANGELOG.md](CHANGELOG.md) for completed features and version history**
@@ -8,7 +8,7 @@
 ## Priority Roadmap
 
 ### 🟢 HIGH PRIORITY - Feasible & High Value
-*Features that can be implemented with existing ntfy HTTP API and provide significant user value*
+*Features implementable with existing ntfy HTTP API*
 
 #### Access Token Management - API Available ✅
 - [x] Generate new access tokens - `POST /v1/account/token` *(Completed)*
@@ -22,7 +22,7 @@
 - [x] Message grouping by topic/priority *(Completed)*
 - [x] Keyboard shortcuts for common actions *(Completed)*
 - [x] Notification snoozing *(Completed v2.4.0)*
-- [x] Do Not Disturb scheduling *(Completed)*
+- [x] Do Not Disturb scheduling *(Completed v2.5.2)*
 
 #### Connection Improvements - Client-Side ✅
 - [x] Auto-reconnect with exponential backoff *(Already implemented)*
@@ -31,10 +31,13 @@
 - [x] Fallback server support *(Completed)*
 
 ### 🟡 MEDIUM PRIORITY - Feasible with Limitations
-*Features possible but with constraints or workarounds*
+*Features with implementation constraints*
 
 #### Message Management (Limited Capabilities)
 - [x] View recent message history (client-side caching via SSE) *(Already implemented)*
+- [x] Archive management and statistics *(Completed v2.5.2)*
+- [x] Browse archived messages with search/filter *(Completed v2.5.2)*
+- [x] Clear old archived messages by age *(Completed v2.5.2)*
 - [ ] Delete individual messages (if API permits)
 - [x] Export message logs to CSV/JSON (cached messages only) *(Completed)*
 - [x] Message filtering by priority/topic (client-side) *(Completed)*
@@ -53,7 +56,7 @@
 - [ ] **Enhanced Shortcuts app integration** *(Expand beyond basic intents to full automation suite)*
 
 ### 🔴 LOW PRIORITY - Limited Feasibility
-*Features that are difficult or impossible with current ntfy API*
+*Features limited by ntfy API constraints*
 
 #### Topic Statistics - ⚠️ API Limitations
 - [ ] ~~Subscriber count~~ *(Not available via HTTP API)*
@@ -77,23 +80,35 @@
 
 ## Current Status Summary
 
-### ✅ Recently Completed (v2.4.0)
-- **Notification Snoozing**: Complete implementation with 8 preset durations and custom branded icon
-- **Message Filtering**: Advanced search and multi-selection filtering system
-- **Bug Fixes**: Dashboard header display, snooze functionality, Swift 6 compatibility
+### ✅ Recently Completed (v2.5.2)
+- **Architectural Refactoring**: Complete SettingsView component extraction (1,843 → 635 lines, 54% reduction)
+- **Do Not Disturb Scheduling**: Time-based notification blocking with weekday selection (fixed Sunday-first week bug)
+- **Archive Management**: Complete message archive system with statistics, browsing, search, and cleanup
+- **Open Source Preparation**: MIT LICENSE, professional logging infrastructure, community-ready codebase
+- **Professional Placeholders**: Updated all UI text to action-oriented, professional language
 
 ### 🎯 Next Priorities
-1. **Custom notification actions** - Interactive notification buttons and responses
-2. **Delete individual messages** - Message management capabilities (if API permits)
-3. **Export to other services** - Integration with Slack, Discord, etc.
-4. **Webhook forwarding** - Forward notifications to external services
+1. **AppleScript support for automation** - High-value automation integration with OSAKit framework
+2. **Enhanced Shortcuts app integration** - Expand beyond basic intents to full automation suite
+3. **Custom notification actions** - Interactive notification buttons and responses
+4. **Delete individual messages** - Message management capabilities (if API permits)
+5. **Export to other services** - Integration with Slack, Discord, etc.
+6. **Webhook forwarding** - Forward notifications to external services
+
+### 🏗️ Architecture & Code Quality
+- [x] **Complete SettingsView refactoring** *(Completed v2.5.2)* - Extracted 6 core settings components, reduced from 1,843 to 635 lines (54% reduction)
+- [x] **Component-based architecture** *(Completed v2.5.2)* - Single-responsibility principle with Views/Settings/ directory structure
+- [x] **Professional logging infrastructure** *(Completed v2.5.2)* - OSLog integration replacing debug print statements
+- [x] **Open source preparation** *(Completed v2.5.2)* - MIT LICENSE, community-ready codebase
+- [ ] **Unit tests for new features** - Test coverage for extracted components and core functionality
+- [ ] **Integration tests with mock ntfy server** - End-to-end testing infrastructure
 
 ### 📚 Documentation & Testing
 - [x] Proxmox VE integration guide *(Completed)*
 - [ ] Video tutorials for setup
 - [ ] Troubleshooting guide expansion
-- [ ] Unit tests for new features
-- [ ] Integration tests with mock ntfy server
+- [ ] Component architecture documentation
+- [ ] Developer contribution guide
 
 ---
 
@@ -131,17 +146,19 @@ Most server administration requires CLI access:
 ### Implementation Progress
 
 **✅ Phase 1 Completed**: Personal access token management, enhanced authentication, UI/UX improvements
-**✅ Phase 2 Completed**: Connection enhancements, message filtering, notification snoozing
-**🔄 Phase 3 In Progress**: Client-side message management (export functionality), system integrations
+**✅ Phase 2A Completed**: Complete SettingsView architectural refactoring with component extraction
+**✅ Phase 2B Completed**: Connection enhancements, message filtering, notification snoozing, DND scheduling
+**✅ Phase 2C Completed**: Archive management system, open source preparation, professional UI polish
+**🔄 Phase 3 In Progress**: System integrations (AppleScript, enhanced Shortcuts), advanced automation
 
 ### Current Recommendation
 
 Continue focus on **HIGH PRIORITY** and **MEDIUM PRIORITY** items that provide user value within ntfy's API constraints. Next development should prioritize:
 
-1. **Do Not Disturb scheduling** - High user value, client-side implementation
-2. **Message export functionality** - Medium priority, works with cached messages
-3. **System integrations** - AppleScript and Shortcuts app support for automation
+1. **AppleScript automation support** - macOS workflow integration
+2. **Enhanced Shortcuts app integration** - Expand beyond basic intents for comprehensive automation
+3. **System integrations** - Third-party service forwarding (Slack, Discord, webhooks)
 
 ---
 
-*Last Updated: 2025-09-21*
+*Last Updated: 2025-09-24*

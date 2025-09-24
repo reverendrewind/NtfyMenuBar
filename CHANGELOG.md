@@ -9,9 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - **Open Source Preparation**
-  - MIT LICENSE for community contribution
-  - Professional Logger utility replacing debug print statements
-  - Community-ready codebase preparation with proper documentation
+  - MIT LICENSE
+  - Logger utility replacing debug print statements
+  - Codebase preparation with documentation
 
 ### Fixed
 - **DND Schedule Bug**
@@ -22,20 +22,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Architecture Improvements**
   - Extracted 3 major settings components from monolithic SettingsView (1,843 → 1,490 lines, 19% reduction)
   - Created focused AccessTokensSettingsView, FallbackServersSettingsView, and DNDSettingsView components
-  - Updated placeholder values to professional, action-oriented language throughout UI
-  - Improved component separation following single-responsibility principle
+  - Updated placeholder text throughout UI
+  - Component separation following single-responsibility principle
 
 ### Removed
 - **Custom Snooze Feature**
   - Removed due to macOS SwiftUI limitations with complex alert interfaces
   - Documented alternative native NSAlert implementation approach in TODO.md
-  - Preserved 8 preset snooze durations for optimal user experience
+  - Preserved 8 preset snooze durations
 
 ### Technical
-- **Service Layer Enhancements**
-  - Enhanced ConnectionManager, FallbackHandler, and MessageFilteringService components
-  - Created professional logging infrastructure with OSLog integration
-  - Resolved all TODO comments with technical documentation for future contributors
+- **Service Layer Changes**
+  - Updated ConnectionManager, FallbackHandler, and MessageFilteringService components
+  - Logging infrastructure with OSLog integration
+  - Resolved TODO comments with documentation
 
 ## [v2.5.1] - 2025-09-24
 

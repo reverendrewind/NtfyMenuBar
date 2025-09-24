@@ -1,6 +1,6 @@
 # NtfyMenuBar
 
-A native macOS menu bar application for [ntfy](https://ntfy.sh) notifications. Get real-time push notifications directly in your menu bar without cluttering your dock.
+A macOS menu bar client for [ntfy](https://ntfy.sh) notifications.
 
 ![Platform](https://img.shields.io/badge/platform-macOS-blue)
 ![Swift](https://img.shields.io/badge/Swift-5.0-orange)
@@ -8,54 +8,22 @@ A native macOS menu bar application for [ntfy](https://ntfy.sh) notifications. G
 
 ## Features
 
-- **Menu Bar Integration**: Runs discretely in your menu bar without a dock icon (LSUIElement)
-- **Flat Panel Dashboard**: Click menu bar icon to open borderless dashboard centered below menu bar icon
-- **Toggle Behavior**: Click dashboard icon to open, click again (or click outside) to close
-- **Quick Message Preview**: Right-click menu shows 5 most recent messages with timestamps
-- **Real-time Notifications**: Live connection to ntfy servers using Server-Sent Events (SSE)
-- **Auto-connect at Launch**: Automatically connects to configured server when app starts
-- **Dual Authentication**: Support for both Basic Authentication and Bearer Token authentication
-- **Secure Storage**: Credentials stored securely in macOS Keychain
-- **Enhanced Notifications**: Rich, branded notifications with priority indicators and interactive actions
-- **Multi-Desktop Support**: Dashboard appears on current desktop/space, not locked to launch desktop
-- **Custom App Icons**: Generated from SVG with proper menu bar template rendering
-- **Dark Mode Support**: Configurable appearance with Light, Dark, and System options
-- **Message Management**: Advanced filtering and grouping with search functionality
-- **Smart Filtering**: Multi-selection filters for topics and priorities with dropdown interface
-- **Message Grouping**: Organize messages by topic or priority with collapsible sections
-- **Powerful Search**: Search across message content, titles, topics, and tags
-- **Notification Snoozing**: Temporarily silence notifications with 8 preset durations and custom branded snooze icon
-- **Access Token Management**: Generate and manage ntfy access tokens directly from the app
-- **Customizable Settings**: Configure notification preferences, message limits, appearance, and auto-connect
-- **Connection Stability**: Improved SSE handling with auto-reconnect and keepalive timers
-- **Sandbox Compatible**: Full App Sandbox support with proper network entitlements
+- Menu bar interface without dock icon (LSUIElement)
+- Borderless dashboard panel below menu bar icon
+- Server-Sent Events (SSE) connection to ntfy servers
+- Basic Authentication and Bearer Token support
+- Secure credential storage in macOS Keychain
+- System notification integration with priority indicators
+- Multi-desktop support
+- Dark/light mode support
+- Message filtering and search
+- Notification snoozing with preset durations
+- Access token generation and management
+- Auto-reconnect with exponential backoff
+- App Sandbox compatibility
 
 ## Screenshots
 
-*Menu Bar Interface*
-- Clean, minimal menu bar icon that matches system appearance
-- Right-click context menu with recent messages and quick actions
-- Borderless dashboard panel that appears centered below menu bar icon with overflow protection
-
-*Dashboard Features*
-- Shows server URL and topic in header when connected
-- Connection status indicator (green=connected, red=disconnected, orange=not configured)
-- Notification snooze controls with real-time countdown and status display
-- Real-time message list with empty state when no notifications
-- Advanced filtering and search interface with compact dropdown menus
-- Message grouping by topic or priority with collapsible sections
-- Multi-selection filtering for both topics and priorities
-- Visual tag emojis for instant notification categorization (99+ supported tag types)
-- Integrated settings and connection controls in footer with proper window management
-
-*Settings Panel*
-- Server configuration (URL and topic) with validation
-- Authentication method selection (Basic Auth or Access Token)
-- Access token generation and management with secure clipboard copying
-- Secure credential management via macOS Keychain
-- Appearance mode selection (Light, Dark, System)
-- Notification preferences and auto-connect toggle
-- Recent messages limit configuration (5-100 messages)
 
 ## Requirements
 
@@ -121,124 +89,35 @@ Access tokens must be exactly 32 characters and start with `tk_`. Tokens are sto
 ## Usage
 
 ### Menu Bar Interaction
-- **Left Click**: Toggle borderless dashboard panel (appears centered below menu bar icon)
-- **Right Click**: Access context menu with:
-  - Recent 5 messages with timestamps and priority indicators
-  - Quick access to dashboard and settings
-  - Connect/Disconnect toggle with current status
-  - Clear messages option
-  - Quit application
-- **Click Outside Dashboard**: Automatically closes the dashboard panel
-- **Escape Key**: Close dashboard when it has focus
+- Left Click: Toggle dashboard panel
+- Right Click: Context menu with recent messages, settings, and controls
+- Click outside or Escape: Close dashboard
 
-### Message Management & Filtering
-
-The dashboard provides advanced message management capabilities:
-
-**Search & Filter Interface:**
-- **Search Bar**: Search across message content, titles, topics, and tags
-- **Topic Filter**: Multi-selection dropdown for filtering by specific topics
-- **Priority Filter**: Multi-selection dropdown for filtering by priority levels (1-5)
-- **Filter Indicator**: Active filters are highlighted with a blue dot
-- **Clear All**: Quick button to reset all active filters
-
-**Message Grouping:**
-- **Group by Topic**: Organize messages into collapsible topic-based sections
-- **Group by Priority**: Group messages by priority level with visual indicators
-- **Expand/Collapse**: Click group headers to toggle section visibility
-- **Group Counts**: Each group shows the number of messages contained
-
-**Filter Controls:**
-- **Multi-Selection**: Select multiple topics or priorities simultaneously
-- **Select All/None**: Quick toggles for all available options
-- **Filter Persistence**: Selected filters remain active until manually cleared
-- **Visual Feedback**: Selected items are clearly indicated with checkmarks
-
-**Keyboard Shortcuts:**
-- **Escape**: Clear active search filters
-- **⌘+Delete**: Clear all messages
-- **⌘+D**: Toggle connection
-- **⌘+,**: Open settings
+### Message Management
+- Search across content, titles, topics, and tags
+- Filter by topics and priority levels
+- Group messages by topic or priority
+- Keyboard shortcuts: Escape (clear filters), ⌘+Delete (clear messages), ⌘+D (toggle connection), ⌘+, (settings)
 
 ### Notification Snoozing
+Temporary silence system notifications (messages still appear in dashboard):
 
-Temporarily silence notifications while still receiving and displaying messages in the dashboard:
+- Preset durations: 5m, 15m, 30m, 1h, 2h, 4h, 8h, until tomorrow
+- Visual feedback: menu bar icon changes when snoozed
+- Countdown display with auto-expiration
+- Persistent across app restarts
 
-**Snooze Durations:**
-- **5 minutes**: Quick short-term snooze
-- **15 minutes**: Brief meeting or break
-- **30 minutes**: Default duration for most situations
-- **1 hour**: Extended focus time
-- **2 hours**: Longer work sessions
-- **4 hours**: Half-day quiet period
-- **8 hours**: Full work day or sleep
-- **Until tomorrow**: Overnight or until next day
-- **Custom**: User-defined duration (framework ready)
+### Notifications
+The app displays system notifications with:
 
-**Snooze Controls:**
-- **Dashboard**: Bell icon in header with dropdown menu and status bar
-- **Menu Bar**: Right-click context menu with snooze submenu
-- **Custom Visual Feedback**: Menu bar icon changes to grayed-out ntfy bell with diagonal slash when snoozed
-- **Real-time Countdown**: Live display of remaining snooze time
-- **Auto-expiration**: Snooze automatically clears when time expires
-- **Quick Clear**: One-click snooze cancellation from bell icon in dashboard header
+- Priority-based indicators and sounds
+- Interactive buttons (Open Dashboard, Mark Read, Dismiss)
+- Message content and metadata
+- Topic and server context
 
-**How It Works:**
-- Messages continue to be received and displayed in the dashboard
-- System notifications are blocked while snooze is active
-- Snooze state persists across app restarts
-- Orange status bar appears in dashboard showing remaining time
 
-### Enhanced Notifications
-Once configured and connected, you'll receive rich, branded notifications featuring:
-
-**Visual Branding:**
-- "ntfy:" prefix for instant recognition
-- Priority-based emoji indicators (🔴 Urgent, 🟠 High, 🟡 Default, 🔵 Low, ⚪ Min)
-- Smart content formatting with metadata display
-
-**Rich Content:**
-- Message content with intelligent truncation
-- Priority level and tag information
-- Timestamp and topic context
-- Server identification
-
-**Interactive Actions:**
-- "Open Dashboard" button for quick access
-- "Mark Read" to dismiss notifications
-- "Dismiss" for immediate removal
-- Click notification to open dashboard
-
-**Priority Features:**
-- Critical sounds for high-priority messages (4-5)
-- Visual priority indicators throughout
-- Badge numbers based on message importance
-
-### Notification Examples
-
-**High Priority Alert:**
-```
-Title: ntfy: 🔴 Server Alert
-Subtitle: 📂 production • 🌐 ntfy
-Body: Database connection lost - immediate attention required
-      ⚠️ Priority: 5
-      🏷️ Tags: urgent, database, production
-      🕐 2:30 PM
-[Open Dashboard] [Mark Read] [Dismiss]
-```
-
-**Regular Update:**
-```
-Title: ntfy: 📢 Deployment Complete  
-Subtitle: 📂 updates • 🌐 ntfy
-Body: Version 2.1.4 successfully deployed to staging
-      🏷️ Tags: deployment, staging
-      🕐 2:25 PM
-[Open Dashboard] [Mark Read] [Dismiss]
-```
-
-### Sending Rich Notifications
-Send notifications to your configured topic using curl, the ntfy mobile app, or any HTTP client. The app enhances all notifications with branding and interactive features:
+### Sending Notifications
+Send notifications using curl or any HTTP client:
 
 ```bash
 # Simple message (enhanced automatically)
@@ -273,33 +152,15 @@ curl -u username:password \
   https://your-server.com/your-topic
 ```
 
-**Priority Levels & Visual Indicators:**
-- **Priority 5** → 🔴 Critical (urgent sound, immediate attention)
-- **Priority 4** → 🟠 High (critical sound, important)  
-- **Priority 3** → 🟡 Default (standard notification)
-- **Priority 2** → 🔵 Low (quiet notification)
-- **Priority 1** → ⚪ Minimal (subtle notification)
+**Priority Levels:**
+- Priority 5: Critical (🔴, critical sound)
+- Priority 4: High (🟠, critical sound)
+- Priority 3: Default (🟡, standard sound)
+- Priority 2: Low (🔵, standard sound)
+- Priority 1: Minimal (⚪, standard sound)
 
-**Tag Emoji Categories (99+ mappings):**
-- **System**: 🚨 urgent, ⚠️ warning, ❌ error, ✅ success, ℹ️ info
-- **Infrastructure**: 🖥️ server, 🗄️ database, 🌐 network, 💾 backup, 🔒 security
-- **Development**: 🚀 deploy, 🔧 build, 🧪 test, 🐛 bug, ✨ feature
-- **Multimedia**: 📹 video, 🎵 audio, 📸 photo, 📺 live, ⬆️ upload, ⬇️ download
-- **Communication**: 📧 email, 💬 chat, 👥 social, 📞 call
-- **Web/API**: 🔌 api, 🌍 web, 🔐 ssl, ☁️ aws, 🐳 docker
-- **Business**: 📅 calendar, ✅ task, 💰 payment, 📈 analytics
-- **Gaming**: 🎮 game, ⚽ sport, 📰 news
-- **IoT/Smart Home**: 🏠 home, 🌡️ temperature, 💡 light, 🚪 door, 🌱 garden
-- **Transportation**: 🚗 car, 🚚 truck, 🚴 bike, 🚆 train, ✈️ plane, ⛽ fuel
-- **Food**: 🍽️ restaurant, 🍕 pizza, ☕ coffee, 🍺 beer, 🛒 shopping
-- **Health**: 🏥 medical, 💪 fitness, ❤️ heart, 🏃 exercise, 😴 sleep, 💊 medicine
-- **Education**: 🎓 school, 📚 books, 📖 course, 📝 exam
-- **Finance**: 🏦 bank, 💳 credit, 📊 trading, ₿ crypto, 🧾 tax
-- **Science**: 🔬 research, 🤖 AI, 🛰️ satellite, ⚗️ lab, 🧬 DNA
-- **Location**: 📍 GPS, 🏘️ address, 🏙️ city, 🗺️ country
-- **Time**: 🕐 clock, ⏰ alarm, ⏱️ timer, 🎂 birthday
-- **Tools**: 🔍 search, 🔀 filter, 📋 copy, 🗑️ delete, ✏️ edit, 📄 file, 📁 folder
-- **Weather**: ☀️ sun, ☁️ cloud, 🌧️ rain, ❄️ snow, ⛈️ storm, 🔥 fire, 🌊 water
+**Tag Emoji Mapping:**
+Tags are automatically mapped to emojis for visual categorization (99+ mappings for system, infrastructure, development, and other categories).
 
 ## Privacy & Security
 
@@ -538,11 +399,12 @@ curl -X POST https://your-ntfy-server.com/your-topic \
 
 For a complete list of changes, new features, and bug fixes, see [CHANGELOG.md](CHANGELOG.md).
 
-### Latest Release - v2.5.0
-- 🔧 **Simplified Architecture**: Removed Shortcuts support to focus on core functionality
-- ✅ **Fixed Settings**: Resolved settings save/load issues
-- 📦 **Cleaner Codebase**: Removed app group complications for better reliability
-- 🚀 **Improved Stability**: Streamlined app for better performance
+### Latest Release - v2.5.2
+- Complete SettingsView architectural refactoring (54% code reduction)
+- Do Not Disturb scheduling with time and weekday configuration
+- Archive management system with statistics and cleanup
+- Open source preparation with MIT license
+- Professional logging infrastructure
 
 ## Acknowledgments
 
@@ -552,4 +414,3 @@ For a complete list of changes, new features, and bug fixes, see [CHANGELOG.md](
 
 ---
 
-Made with ❤️ for the macOS community
