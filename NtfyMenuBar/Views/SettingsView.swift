@@ -346,343 +346,39 @@ struct SettingsView: View {
     }
 
     private var fallbackServersView: some View {
-        VStack(alignment: .leading, spacing: 20) {
-            // Configuration section
-            VStack(alignment: .leading, spacing: 12) {
-                Text("Fallback server configuration")
-                    .font(.headline)
-
-                Toggle("Enable fallback servers", isOn: $enableFallbackServers)
-                    .help("Automatically try fallback servers when primary server fails")
-
-                if enableFallbackServers {
-                    VStack(alignment: .leading, spacing: 4) {
-                        HStack {
-                            Text("Retry delay: \(Int(fallbackRetryDelay)) seconds")
-                            Spacer()
-                            Stepper("", value: $fallbackRetryDelay, in: 10...300, step: 10)
-                        }
-                        Text("Time to wait before retrying failed servers")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    }
-                }
-            }
-
-            // Server management section
-            if enableFallbackServers {
-                VStack(alignment: .leading, spacing: 12) {
-                    HStack {
-                        Text("Configured servers")
-                            .font(.headline)
-                        Spacer()
-                        Button("Add server") {
-                            editingServer = NtfyServer()
-                            showingServerEditor = true
-                        }
-                        .buttonStyle(.borderedProminent)
-                    }
-
-                    if fallbackServers.isEmpty {
-                        VStack(spacing: 8) {
-                            Image(systemName: "server.rack")
-                                .font(.title2)
-                                .foregroundColor(.secondary)
-                            Text("No fallback servers configured")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                            Text("Add servers to provide automatic failover when the primary server is unavailable")
-                                .font(.caption2)
-                                .foregroundColor(.secondary)
-                                .multilineTextAlignment(.center)
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 20)
-                    } else {
-                        VStack(spacing: 8) {
-                            ForEach(Array(fallbackServers.enumerated()), id: \.element.id) { index, server in
-                                HStack {
-                                    VStack(alignment: .leading, spacing: 2) {
-                                        Text(server.displayName)
-                                            .font(.body)
-                                            .fontWeight(.medium)
-                                        Text(server.cleanURL)
-                                            .font(.caption)
-                                            .foregroundColor(.secondary)
-                                        if !server.username.isEmpty {
-                                            Text("User: \(server.username)")
-                                                .font(.caption2)
-                                                .foregroundColor(.blue)
-                                        }
-                                    }
-
-                                    Spacer()
-
-                                    VStack(spacing: 4) {
-                                        Toggle("", isOn: Binding(
-                                            get: { server.isEnabled },
-                                            set: { newValue in
-                                                fallbackServers[index].isEnabled = newValue
-                                            }
-                                        ))
-                                        .help("Enable/disable this server")
-
-                                        HStack(spacing: 4) {
-                                            Button("Edit") {
-                                                editingServer = server
-                                                showingServerEditor = true
-                                            }
-                                            .buttonStyle(.bordered)
-                                            .controlSize(.small)
-
-                                            Button("Delete") {
-                                                fallbackServers.remove(at: index)
-                                            }
-                                            .buttonStyle(.bordered)
-                                            .controlSize(.small)
-                                            .foregroundColor(.red)
-                                        }
-                                    }
-                                }
-                                .padding(.horizontal, 12)
-                                .padding(.vertical, 8)
-                                .background(server.isEnabled ? Color.green.opacity(0.1) : Color.secondary.opacity(0.1))
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 8)
-                                        .stroke(server.isEnabled ? Color.green.opacity(0.3) : Color.clear, lineWidth: 1)
-                                )
-                                .cornerRadius(8)
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        .sheet(isPresented: $showingServerEditor) {
-            ServerEditorView(
-                server: $editingServer,
-                isPresented: $showingServerEditor
-            ) { editedServer in
-                if let editedServer = editedServer {
-                    if let index = fallbackServers.firstIndex(where: { $0.id == editedServer.id }) {
-                        fallbackServers[index] = editedServer
-                    } else {
-                        fallbackServers.append(editedServer)
-                    }
-                }
-            }
-        }
+        FallbackServersSettingsView(
+            fallbackServers: $fallbackServers,
+            enableFallbackServers: $enableFallbackServers,
+            fallbackRetryDelay: $fallbackRetryDelay,
+            editingServer: $editingServer,
+            showingServerEditor: $showingServerEditor
+        )
     }
 
     private var dndSettingsView: some View {
-        VStack(alignment: .leading, spacing: 20) {
-            VStack(alignment: .leading, spacing: 12) {
-                Text("Do Not Disturb schedule")
-                    .font(.headline)
-
-                Toggle("Enable scheduled Do Not Disturb", isOn: $isDNDScheduleEnabled)
-                    .help("Automatically block notifications during specified hours")
-
-                if isDNDScheduleEnabled {
-                    VStack(alignment: .leading, spacing: 16) {
-                        // Time configuration
-                        HStack {
-                            VStack(alignment: .leading) {
-                                Text("Start time")
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
-                                DatePicker("", selection: $dndStartTime, displayedComponents: .hourAndMinute)
-                                    .labelsHidden()
-                            }
-
-                            Spacer()
-
-                            VStack(alignment: .leading) {
-                                Text("End time")
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
-                                DatePicker("", selection: $dndEndTime, displayedComponents: .hourAndMinute)
-                                    .labelsHidden()
-                            }
-                        }
-
-                        // Days of week selection
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("Active days")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-
-                            HStack(spacing: 8) {
-                                ForEach(1...7, id: \.self) { day in
-                                    let dayName = Calendar.current.shortWeekdaySymbols[day == 1 ? 6 : day - 2]
-
-                                    Button(action: {
-                                        if dndDaysOfWeek.contains(day) {
-                                            dndDaysOfWeek.remove(day)
-                                        } else {
-                                            dndDaysOfWeek.insert(day)
-                                        }
-                                    }) {
-                                        Text(dayName)
-                                            .font(.caption)
-                                            .frame(width: 28, height: 28)
-                                            .background(
-                                                Circle()
-                                                    .fill(dndDaysOfWeek.contains(day) ? Color.accentColor : Color.secondary.opacity(0.2))
-                                            )
-                                            .foregroundColor(dndDaysOfWeek.contains(day) ? .white : .primary)
-                                    }
-                                    .buttonStyle(.plain)
-                                }
-                            }
-                        }
-
-                        // Status display
-                        if viewModel.settings.isCurrentlyInDND {
-                            HStack {
-                                Image(systemName: "moon.zzz.fill")
-                                    .foregroundColor(.orange)
-                                Text("Do Not Disturb is currently active")
-                                    .font(.caption)
-                                    .foregroundColor(.orange)
-                            }
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 4)
-                            .background(Color.orange.opacity(0.1))
-                            .cornerRadius(6)
-                        }
-                    }
-                }
-            }
-        }
+        DNDSettingsView(
+            isDNDScheduleEnabled: $isDNDScheduleEnabled,
+            dndStartTime: $dndStartTime,
+            dndEndTime: $dndEndTime,
+            dndDaysOfWeek: $dndDaysOfWeek
+        )
+        .environmentObject(viewModel)
     }
 
     private var accessTokensView: some View {
-        VStack(alignment: .leading, spacing: 20) {
-            VStack(alignment: .leading, spacing: 12) {
-                Text("Generate access tokens")
-                    .font(.headline)
-
-                Text("Access tokens allow applications to authenticate without using your password. Each token provides full account access except password changes and account deletion.")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Token label (optional)")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                    TextField("e.g., iOS app, monitoring script", text: $newTokenLabel)
-                        .textFieldStyle(.roundedBorder)
-
-                    Text("Expiration")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                    Picker("", selection: $newTokenExpiration) {
-                        ForEach(TokenExpiration.allCases, id: \.self) { expiration in
-                            Text(expiration.displayName).tag(expiration)
-                        }
-                    }
-                    .pickerStyle(.menu)
-
-                    HStack {
-                        Button("Generate token") {
-                            generateNewToken()
-                        }
-                        .buttonStyle(.borderedProminent)
-                        .disabled(isGeneratingToken || !canGenerateToken)
-
-                        if isGeneratingToken {
-                            ProgressView()
-                                .scaleEffect(0.8)
-                        }
-                    }
-
-                    if let error = tokenError {
-                        Text(error)
-                            .font(.caption)
-                            .foregroundColor(.red)
-                    }
-                }
-            }
-
-            // Generated token display
-            if let token = generatedToken {
-                VStack(alignment: .leading, spacing: 12) {
-                    Text("New token generated")
-                        .font(.headline)
-                        .foregroundColor(.green)
-
-                    Text("⚠️ Copy this token now - you won't be able to see it again!")
-                        .font(.caption)
-                        .foregroundColor(.orange)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
-                        .background(Color.orange.opacity(0.1))
-                        .cornerRadius(4)
-
-                    HStack {
-                        Text(token)
-                            .font(.system(.caption, design: .monospaced))
-                            .foregroundColor(.primary)
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 4)
-                            .background(Color.secondary.opacity(0.1))
-                            .cornerRadius(4)
-                            .textSelection(.enabled)
-
-                        Button("Copy") {
-                            copyToClipboard(token)
-                        }
-                        .buttonStyle(.bordered)
-                        .controlSize(.small)
-                    }
-
-                    Button("Dismiss") {
-                        generatedToken = nil
-                        newTokenLabel = ""
-                        newTokenExpiration = .never
-                    }
-                    .buttonStyle(.borderless)
-                    .foregroundColor(.secondary)
-                }
-                .padding()
-                .background(Color.green.opacity(0.1))
-                .cornerRadius(8)
-            }
-
-            // Existing tokens list
-            VStack(alignment: .leading, spacing: 12) {
-                Text("Existing tokens")
-                    .font(.headline)
-
-                if accessTokens.isEmpty {
-                    VStack(spacing: 8) {
-                        Image(systemName: "key.slash")
-                            .font(.title2)
-                            .foregroundColor(.secondary)
-                        Text("No access tokens")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                        Text("Generate your first token above to get started")
-                            .font(.caption2)
-                            .foregroundColor(.secondary)
-                            .multilineTextAlignment(.center)
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 20)
-                } else {
-                    VStack(spacing: 8) {
-                        ForEach(accessTokens) { token in
-                            AccessTokenRowView(
-                                token: token,
-                                onCopy: { copyToClipboard($0) },
-                                onRevoke: { revokeToken($0) }
-                            )
-                        }
-                    }
-                }
-            }
-        }
+        AccessTokensSettingsView(
+            serverURL: $serverURL,
+            authMethod: $authMethod,
+            username: $username,
+            password: $password,
+            accessToken: $accessToken,
+            accessTokens: $accessTokens,
+            newTokenLabel: $newTokenLabel,
+            newTokenExpiration: $newTokenExpiration,
+            isGeneratingToken: $isGeneratingToken,
+            generatedToken: $generatedToken,
+            tokenError: $tokenError
+        )
     }
 
     private var archiveSettingsView: some View {
@@ -1037,55 +733,6 @@ struct SettingsView: View {
         }
     }
 
-    private var canGenerateToken: Bool {
-        return !serverURL.isEmpty &&
-               ((authMethod == .basicAuth && !username.isEmpty) ||
-                (authMethod == .accessToken && !accessToken.isEmpty))
-    }
-
-    private func generateNewToken() {
-        guard !isGeneratingToken else { return }
-
-        isGeneratingToken = true
-        tokenError = nil
-
-        Task {
-            do {
-                let token = try await TokenManager.shared.generateToken(
-                    serverURL: serverURL,
-                    authMethod: authMethod,
-                    username: username,
-                    password: password,
-                    accessToken: accessToken,
-                    label: newTokenLabel.isEmpty ? nil : newTokenLabel,
-                    expiration: newTokenExpiration
-                )
-
-                await MainActor.run {
-                    self.generatedToken = token.token
-                    self.accessTokens.append(token)
-                    self.isGeneratingToken = false
-                }
-            } catch {
-                await MainActor.run {
-                    self.tokenError = error.localizedDescription
-                    self.isGeneratingToken = false
-                }
-            }
-        }
-    }
-
-    private func copyToClipboard(_ text: String) {
-        let pasteboard = NSPasteboard.general
-        pasteboard.clearContents()
-        pasteboard.setString(text, forType: .string)
-    }
-
-    private func revokeToken(_ token: AccessToken) {
-        // Note: This only removes the token from local storage.
-        // For server-side revocation, implement DELETE to /v1/access-tokens/{token_id}
-        accessTokens.removeAll { $0.id == token.id }
-    }
 
     private func addTopic() {
         let input = newTopic.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
@@ -1738,97 +1385,6 @@ struct ServerEditorView: View {
     }
 }
 
-struct AccessTokenRowView: View {
-    let token: AccessToken
-    let onCopy: (String) -> Void
-    let onRevoke: (AccessToken) -> Void
-
-    var body: some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 4) {
-                HStack(spacing: 8) {
-                    Text(token.displayLabel)
-                        .font(.body)
-                        .fontWeight(.medium)
-
-                    if token.isExpired {
-                        Text("EXPIRED")
-                            .font(.caption2)
-                            .fontWeight(.bold)
-                            .foregroundColor(.white)
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 2)
-                            .background(Color.red)
-                            .cornerRadius(4)
-                    }
-                }
-
-                Text(token.maskedToken)
-                    .font(.system(.caption, design: .monospaced))
-                    .foregroundColor(.secondary)
-
-                HStack(spacing: 8) {
-                    if let lastAccessDate = token.lastAccessDate {
-                        Text("Last used: \(lastAccessDate, formatter: dateFormatter)")
-                            .font(.caption2)
-                            .foregroundColor(.secondary)
-                    } else {
-                        Text("Never used")
-                            .font(.caption2)
-                            .foregroundColor(.secondary)
-                    }
-
-                    Text("•")
-                        .font(.caption2)
-                        .foregroundColor(.secondary)
-
-                    if let expirationDate = token.expirationDate {
-                        Text("Expires: \(expirationDate, formatter: dateFormatter)")
-                            .font(.caption2)
-                            .foregroundColor(token.isExpired ? .red : .secondary)
-                    } else {
-                        Text("Never expires")
-                            .font(.caption2)
-                            .foregroundColor(.secondary)
-                    }
-                }
-            }
-
-            Spacer()
-
-            HStack(spacing: 4) {
-                Button("Copy") {
-                    onCopy(token.token)
-                }
-                .buttonStyle(.bordered)
-                .controlSize(.small)
-                .disabled(token.isExpired)
-
-                Button("Revoke") {
-                    onRevoke(token)
-                }
-                .buttonStyle(.bordered)
-                .controlSize(.small)
-                .foregroundColor(.red)
-            }
-        }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 8)
-        .background(token.isExpired ? Color.red.opacity(0.05) : Color.secondary.opacity(0.05))
-        .overlay(
-            RoundedRectangle(cornerRadius: 8)
-                .stroke(token.isExpired ? Color.red.opacity(0.2) : Color.clear, lineWidth: 1)
-        )
-        .cornerRadius(8)
-    }
-
-    private var dateFormatter: DateFormatter {
-        let formatter = DateFormatter()
-        formatter.dateStyle = .short
-        formatter.timeStyle = .short
-        return formatter
-    }
-}
 
 extension View {
     func placeholder<Content: View>(

@@ -5,6 +5,38 @@ All notable changes to NtfyMenuBar will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.5.2] - 2025-09-24
+
+### Added
+- **Open Source Preparation**
+  - MIT LICENSE for community contribution
+  - Professional Logger utility replacing debug print statements
+  - Community-ready codebase preparation with proper documentation
+
+### Fixed
+- **DND Schedule Bug**
+  - Fixed Do Not Disturb schedule week incorrectly starting with Saturday instead of Sunday
+  - Corrected day-to-weekday symbol mapping in settings interface
+
+### Changed
+- **Architecture Improvements**
+  - Extracted 3 major settings components from monolithic SettingsView (1,843 → 1,490 lines, 19% reduction)
+  - Created focused AccessTokensSettingsView, FallbackServersSettingsView, and DNDSettingsView components
+  - Updated placeholder values to professional, action-oriented language throughout UI
+  - Improved component separation following single-responsibility principle
+
+### Removed
+- **Custom Snooze Feature**
+  - Removed due to macOS SwiftUI limitations with complex alert interfaces
+  - Documented alternative native NSAlert implementation approach in TODO.md
+  - Preserved 8 preset snooze durations for optimal user experience
+
+### Technical
+- **Service Layer Enhancements**
+  - Enhanced ConnectionManager, FallbackHandler, and MessageFilteringService components
+  - Created professional logging infrastructure with OSLog integration
+  - Resolved all TODO comments with technical documentation for future contributors
+
 ## [v2.5.1] - 2025-09-24
 
 ### Fixed
