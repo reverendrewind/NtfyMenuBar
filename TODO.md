@@ -48,8 +48,9 @@
 - [ ] Export to other services (Slack, Discord, etc.)
 - [ ] Webhook forwarding
 - [ ] Custom notification actions
-- [ ] AppleScript support for automation *(Deferred to future version - sandbox configuration complexity)*
-- [x] Shortcuts app integration *(Completed)*
+- [ ] **Custom snooze duration picker** *(Removed due to macOS SwiftUI limitations - needs native NSAlert approach)*
+- [ ] **AppleScript support for automation** *(High value - requires OSAKit framework integration)*
+- [ ] **Enhanced Shortcuts app integration** *(Expand beyond basic intents to full automation suite)*
 
 ### 🔴 LOW PRIORITY - Limited Feasibility
 *Features that are difficult or impossible with current ntfy API*

@@ -138,7 +138,7 @@ struct SettingsView: View {
             .padding(20)
             .padding(.top, 0)
         }
-        .frame(width: 700, height: 650)
+        .frame(width: UIConstants.Settings.width, height: UIConstants.Settings.height)
         .background(Color.theme.windowBackground)
         .onAppear {
             loadCurrentSettings()
@@ -1082,8 +1082,8 @@ struct SettingsView: View {
     }
 
     private func revokeToken(_ token: AccessToken) {
-        // For now, just remove from local list
-        // TODO: Implement actual token revocation via API
+        // Note: This only removes the token from local storage.
+        // For server-side revocation, implement DELETE to /v1/access-tokens/{token_id}
         accessTokens.removeAll { $0.id == token.id }
     }
 

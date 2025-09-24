@@ -9,28 +9,14 @@ import SwiftUI
 import Foundation
 
 
-enum GroupingMode: String, CaseIterable {
-    case none = "None"
-    case byTopic = "By topic"
-    case byPriority = "By priority"
-
-    var displayName: String {
-        return rawValue
-    }
-
-    var systemImage: String {
-        switch self {
-        case .none: return "list.bullet"
-        case .byTopic: return "folder"
-        case .byPriority: return "flag"
-        }
-    }
-}
 
 struct ContentView: View {
     @EnvironmentObject var viewModel: NtfyViewModel
     @EnvironmentObject var themeManager: ThemeManager
     @Environment(\.dismiss) private var dismiss
+
+    // Filtering service
+    private let filteringService = MessageFilteringService()
 
     // Filtering and search state
     @State private var searchText: String = ""
@@ -42,6 +28,7 @@ struct ContentView: View {
     // Grouping state
     @State private var groupingMode: GroupingMode = .none
     @State private var collapsedSections: Set<String> = []
+
     
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -51,7 +38,7 @@ struct ContentView: View {
             
             if viewModel.messages.isEmpty {
                 emptyStateView
-            } else if hasActiveFilters {
+            } else if filteringService.hasActiveFilters(searchText: searchText, selectedPriorities: selectedPriorities, selectedTopics: selectedTopics) {
                 searchAndFilterView
             } else {
                 messagesView
@@ -335,9 +322,9 @@ struct ContentView: View {
                             HStack {
                                 Image(systemName: selectedPriorities.contains(priority) ? "checkmark" : "")
                                     .frame(width: 12)
-                                Text(priorityDisplayName(for: priority))
+                                Text(filteringService.priorityDisplayName(for: priority))
                                 Spacer()
-                                let count = viewModel.messages.filter { ($0.priority ?? 3) == priority }.count
+                                let count = filteringService.getMessageCount(for: priority, in: viewModel.messages)
                                 Text("(\(count))")
                                     .foregroundColor(.secondary)
                             }
@@ -349,7 +336,7 @@ struct ContentView: View {
                             Text("All priorities")
                                 .font(.caption)
                         } else if selectedPriorities.count == 1 {
-                            Text(priorityDisplayName(for: selectedPriorities.first!))
+                            Text(filteringService.priorityDisplayName(for: selectedPriorities.first!))
                                 .font(.caption)
                         } else {
                             Text("\(selectedPriorities.count) priorities selected")
@@ -405,7 +392,7 @@ struct ContentView: View {
                                     .frame(width: 12)
                                 Text(topic)
                                 Spacer()
-                                let count = viewModel.messages.filter { $0.topic == topic }.count
+                                let count = filteringService.getMessageCount(for: topic, in: viewModel.messages)
                                 Text("(\(count))")
                                     .foregroundColor(.secondary)
                             }
@@ -578,66 +565,20 @@ struct ContentView: View {
     // MARK: - Filtering Logic
 
     private var filteredMessages: [NtfyMessage] {
-        var messages = viewModel.messages
-
-        // Apply search filter
-        if !searchText.isEmpty {
-            messages = messages.filter { message in
-                let searchLower = searchText.lowercased()
-                return (message.message?.lowercased().contains(searchLower) ?? false) ||
-                       (message.title?.lowercased().contains(searchLower) ?? false) ||
-                       message.topic.lowercased().contains(searchLower) ||
-                       (message.tags?.joined(separator: " ").lowercased().contains(searchLower) ?? false)
-            }
-        }
-
-        // Apply priority filter (multi-selection)
-        if !selectedPriorities.isEmpty {
-            messages = messages.filter { message in
-                selectedPriorities.contains(message.priority ?? 3)
-            }
-        }
-
-        // Apply topic filter (multi-selection)
-        if !selectedTopics.isEmpty {
-            messages = messages.filter { message in
-                selectedTopics.contains(message.topic)
-            }
-        }
-
-        return messages
+        return filteringService.filterMessages(
+            viewModel.messages,
+            searchText: searchText,
+            selectedPriorities: selectedPriorities,
+            selectedTopics: selectedTopics
+        )
     }
 
     private var availableTopics: [String] {
-        let allTopics = Set(viewModel.messages.map { $0.topic })
-        return Array(allTopics).sorted()
+        return filteringService.getAvailableTopics(from: viewModel.messages)
     }
 
-    private var messageGroups: [(key: String, value: [NtfyMessage])] {
-        let messages = filteredMessages
-
-        switch groupingMode {
-        case .none:
-            return []
-        case .byTopic:
-            // Group by topic
-            let grouped = Dictionary(grouping: messages) { $0.topic }
-            return grouped.sorted { $0.key < $1.key }
-                .map { (key: $0.key, value: $0.value.sorted { $0.date > $1.date }) }
-        case .byPriority:
-            // Group by priority
-            let grouped = Dictionary(grouping: messages) { message in
-                message.priorityDescription
-            }
-            // Sort priority groups in descending order (Max to Min)
-            let priorityOrder = ["Max", "High", "Default", "Low", "Min"]
-            return grouped.sorted { first, second in
-                let firstIndex = priorityOrder.firstIndex(of: first.key) ?? 999
-                let secondIndex = priorityOrder.firstIndex(of: second.key) ?? 999
-                return firstIndex < secondIndex
-            }
-            .map { (key: $0.key, value: $0.value.sorted { $0.date > $1.date }) }
-        }
+    private var messageGroups: [MessageGroup] {
+        return filteringService.groupMessages(filteredMessages, by: groupingMode)
     }
 
     private func toggleSection(_ section: String) {
@@ -649,9 +590,11 @@ struct ContentView: View {
     }
 
     private var hasActiveFilters: Bool {
-        return !searchText.isEmpty ||
-               !selectedPriorities.isEmpty ||
-               !selectedTopics.isEmpty
+        return filteringService.hasActiveFilters(
+            searchText: searchText,
+            selectedPriorities: selectedPriorities,
+            selectedTopics: selectedTopics
+        )
     }
 
     private func clearAllFilters() {
@@ -661,16 +604,6 @@ struct ContentView: View {
         showFilterOptions = false
     }
 
-    private func priorityDisplayName(for priority: Int) -> String {
-        switch priority {
-        case 1: return "Min (1)"
-        case 2: return "Low (2)"
-        case 3: return "Normal (3)"
-        case 4: return "High (4)"
-        case 5: return "Max (5)"
-        default: return "Normal (3)"
-        }
-    }
 
     // MARK: - Snooze Controls
 
@@ -698,14 +631,6 @@ struct ContentView: View {
                         }
                     }
 
-                    Divider()
-
-                    Button(action: {
-                        // TODO: Implement custom duration picker
-                        viewModel.snoozeNotifications(duration: .custom, customDuration: 60 * 60) // 1 hour default
-                    }) {
-                        Label("Custom...", systemImage: "slider.horizontal.3")
-                    }
                 } label: {
                     Image(systemName: "bell")
                         .font(.system(size: 12))

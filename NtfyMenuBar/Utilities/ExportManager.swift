@@ -53,8 +53,8 @@ class ExportManager {
         scope: ExportScope,
         completion: @escaping (Result<URL, Error>) -> Void
     ) {
-        // For now, export directly to Desktop to bypass entitlements issues
-        // TODO: Re-enable save panel once entitlements are properly configured
+        // Note: Currently exports directly to Desktop due to app sandboxing.
+        // To enable file picker, add com.apple.security.files.user-selected.read-write entitlement
         exportToDesktop(messages, format: format, scope: scope, completion: completion)
     }
 
