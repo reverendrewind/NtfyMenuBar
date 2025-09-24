@@ -67,6 +67,12 @@ class NtfyViewModel: ObservableObject {
         messages.removeAll()
         hasUnreadMessages = false
         NotificationManager.shared.clearAllNotifications()
+
+        // Set the cleared timestamp to prevent showing old messages on restart
+        settings.lastClearedTimestamp = Date()
+        updateSettings(settings)
+
+        print("🗑️ Cleared messages from list, archived messages preserved")
     }
     
     func updateSettings(_ newSettings: NtfySettings) {
@@ -231,14 +237,22 @@ class NtfyViewModel: ObservableObject {
             let recentMessages = await MessageArchive.shared.getArchivedMessages(since: weekAgo)
 
             await MainActor.run {
+                // Filter out messages that were cleared (older than lastClearedTimestamp)
+                let filteredMessages: [NtfyMessage]
+                if let clearedTimestamp = self.settings.lastClearedTimestamp {
+                    filteredMessages = recentMessages.filter { $0.date > clearedTimestamp }
+                } else {
+                    filteredMessages = recentMessages
+                }
+
                 // Only show the most recent messages up to maxRecentMessages, but avoid duplicates
-                let uniqueMessages = recentMessages.reduce(into: [String: NtfyMessage]()) { dict, message in
+                let uniqueMessages = filteredMessages.reduce(into: [String: NtfyMessage]()) { dict, message in
                     dict[message.uniqueId] = message
                 }.values.sorted { $0.date > $1.date }
 
                 self.messages = Array(uniqueMessages.prefix(self.settings.maxRecentMessages))
                 self.hasUnreadMessages = !self.messages.isEmpty
-                print("📂 Loaded \(self.messages.count) recent archived messages (deduplicated)")
+                print("📂 Loaded \(self.messages.count) recent archived messages (deduplicated, cleared timestamp: \(self.settings.lastClearedTimestamp?.description ?? "none"))")
             }
         }
     }

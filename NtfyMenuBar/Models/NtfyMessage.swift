@@ -219,6 +219,9 @@ struct NtfySettings: Codable, Equatable {
     var snoozeEndTime: Date?
     var defaultSnoozeDuration: SnoozeDuration = .thirtyMinutes
 
+    // Message clearing settings
+    var lastClearedTimestamp: Date?
+
     // Do Not Disturb scheduling settings
     var isDNDScheduleEnabled: Bool = false
     var dndStartTime: Date = Calendar.current.date(bySettingHour: 22, minute: 0, second: 0, of: Date()) ?? Date()

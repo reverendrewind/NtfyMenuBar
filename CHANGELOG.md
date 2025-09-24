@@ -5,6 +5,24 @@ All notable changes to NtfyMenuBar will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.5.1] - 2025-09-24
+
+### Fixed
+- **Message clearing persistence**
+  - Fixed bug where cleared messages would reappear after application restart
+  - Messages now stay cleared permanently while preserving archived data for export
+  - Implemented timestamp-based filtering to respect user's clear action
+- **Notification sounds**
+  - Fixed notification sounds not playing due to missing file extension in sound loading
+  - Restored proper custom sound support (Basso, Glass, etc.) that was broken in v2.5.0
+  - Resolved sound override issue where high-priority notifications ignored user sound preferences
+
+### Technical Changes
+- Added `lastClearedTimestamp` tracking in NtfySettings for persistent message clearing
+- Updated `loadRecentArchivedMessages()` to filter messages based on cleared timestamp
+- Fixed sound file loading by appending `.aiff` extension to custom sound names
+- Removed duplicate sound assignment that was overriding user preferences
+
 ## [v2.5.0] - 2025-09-24
 
 ### Changed

@@ -77,11 +77,6 @@ class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
             "timestamp": message.time
         ]
         
-        // Add priority-based styling
-        if let priority = message.priority, priority >= 4 {
-            content.sound = .defaultCritical
-        }
-        
         let request = UNNotificationRequest(
             identifier: message.id,
             content: content,
@@ -259,7 +254,7 @@ class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
 
         // Use custom sound from settings
         if let soundFileName = settings.notificationSound.fileName {
-            return UNNotificationSound(named: UNNotificationSoundName(soundFileName))
+            return UNNotificationSound(named: UNNotificationSoundName("\(soundFileName).aiff"))
         }
 
         return .default
