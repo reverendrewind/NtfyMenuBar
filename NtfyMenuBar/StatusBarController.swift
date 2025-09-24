@@ -23,6 +23,7 @@ class StatusBarController: NSObject, ObservableObject, NSWindowDelegate {
     private var dashboardWindow: NSWindow?
     private var settingsWindow: NSWindow?
     private var cancellables = Set<AnyCancellable>()
+    private var globalEventMonitor: Any?
     
     init(viewModel: NtfyViewModel, themeManager: ThemeManager) {
         self.viewModel = viewModel
@@ -46,7 +47,7 @@ class StatusBarController: NSObject, ObservableObject, NSWindowDelegate {
         
         if let button = statusItem?.button {
             // Set the icon
-            if let image = NSImage(named: "MenuBarIcon") {
+            if let image = NSImage(named: StringConstants.Assets.menuBarIcon) {
                 image.isTemplate = true // Enable template rendering for dark/light mode
                 button.image = image
             }
@@ -83,14 +84,14 @@ class StatusBarController: NSObject, ObservableObject, NSWindowDelegate {
         // Set the appropriate icon based on snooze state
         if viewModel.isSnoozed {
             // Use custom snooze icon (grayed-out ntfy bell with slash/ZZZ)
-            if let image = NSImage(named: "MenuBarIconSnooze") {
+            if let image = NSImage(named: StringConstants.Assets.menuBarIconSnooze) {
                 image.isTemplate = true
                 button.image = image
                 button.toolTip = "Notifications snoozed - \(viewModel.snoozeStatusText)"
             }
         } else {
             // Use normal ntfy bell icon
-            if let image = NSImage(named: "MenuBarIcon") {
+            if let image = NSImage(named: StringConstants.Assets.menuBarIcon) {
                 image.isTemplate = true
                 button.image = image
                 button.toolTip = "ntfy Notifications"
@@ -120,19 +121,19 @@ class StatusBarController: NSObject, ObservableObject, NSWindowDelegate {
             // Window exists and is visible, close it (toggle behavior)
             window.close()
         } else {
-            let windowSize = CGSize(width: 320, height: 300)
-            
+            let windowSize = CGSize(width: UIConstants.Dashboard.width, height: UIConstants.Dashboard.height)
+
             // Get the actual menu bar button position (this worked before!)
             guard let button = statusItem?.button else { return }
             let buttonFrame = button.frame
             let buttonWindow = button.window!
             let buttonScreenRect = buttonWindow.convertToScreen(buttonFrame)
-            
+
             // Center window below button with overflow protection
             let buttonCenterX = buttonScreenRect.midX
-            let windowX = max(0, min(buttonCenterX - windowSize.width / 2, 
+            let windowX = max(0, min(buttonCenterX - windowSize.width / 2,
                                    buttonWindow.screen!.frame.maxX - windowSize.width))
-            let windowY = buttonScreenRect.minY - windowSize.height - 5
+            let windowY = buttonScreenRect.minY - windowSize.height - UIConstants.Dashboard.buttonGap
             
             print("📍 Button screen rect: \(buttonScreenRect)")
             print("📍 Window position: x=\(windowX), y=\(windowY)")
@@ -145,8 +146,8 @@ class StatusBarController: NSObject, ObservableObject, NSWindowDelegate {
         // Fallback positioning in top-right corner
         guard let screen = NSScreen.main else { return }
         let screenFrame = screen.frame
-        let x = screenFrame.maxX - windowSize.width - 20
-        let y = screenFrame.maxY - 30 - windowSize.height
+        let x = screenFrame.maxX - windowSize.width - UIConstants.Dashboard.screenMargin
+        let y = screenFrame.maxY - UIConstants.MenuBar.fallbackMargin - windowSize.height
         createDashboardWindow(at: CGPoint(x: x, y: y), size: windowSize)
     }
     
@@ -164,7 +165,7 @@ class StatusBarController: NSObject, ObservableObject, NSWindowDelegate {
         window.appearance = themeManager.isDarkMode ? NSAppearance(named: .darkAqua) : NSAppearance(named: .aqua)
         window.isOpaque = true  // Changed to true for better rendering
         window.hasShadow = true
-        window.level = .popUpMenu // Same level as menu bar menus
+        window.level = .floating // Changed from .popUpMenu for better focus behavior
         window.isReleasedWhenClosed = false
         window.collectionBehavior = [.moveToActiveSpace, .stationary]
         
@@ -178,48 +179,51 @@ class StatusBarController: NSObject, ObservableObject, NSWindowDelegate {
         
         window.makeKeyAndOrderFront(nil)
         dashboardWindow = window
+
+        // Set up global event monitor to detect clicks outside the dashboard
+        setupGlobalEventMonitor()
     }
     
     private func showMenu() {
         let menu = NSMenu()
         
         // Dashboard item
-        let dashboardItem = NSMenuItem(title: "Open Dashboard", action: #selector(openDashboardFromMenu), keyEquivalent: "")
+        let dashboardItem = NSMenuItem(title: StringConstants.MenuItems.openDashboard, action: #selector(openDashboardFromMenu), keyEquivalent: "")
         dashboardItem.target = self
         menu.addItem(dashboardItem)
-        
+
         menu.addItem(NSMenuItem.separator())
-        
+
         // Recent Messages Section
         if viewModel.messages.isEmpty {
-            let noMessagesItem = NSMenuItem(title: "No recent messages", action: nil, keyEquivalent: "")
+            let noMessagesItem = NSMenuItem(title: StringConstants.MenuItems.noRecentMessages, action: nil, keyEquivalent: "")
             noMessagesItem.isEnabled = false
             menu.addItem(noMessagesItem)
         } else {
             // Add header
-            let recentHeader = NSMenuItem(title: "Recent Messages", action: nil, keyEquivalent: "")
+            let recentHeader = NSMenuItem(title: StringConstants.MenuItems.recentMessages, action: nil, keyEquivalent: "")
             recentHeader.isEnabled = false
             let headerFont = NSFont.boldSystemFont(ofSize: NSFont.systemFontSize)
-            recentHeader.attributedTitle = NSAttributedString(string: "Recent Messages", attributes: [
+            recentHeader.attributedTitle = NSAttributedString(string: StringConstants.MenuItems.recentMessages, attributes: [
                 .font: headerFont,
                 .foregroundColor: NSColor.secondaryLabelColor
             ])
             menu.addItem(recentHeader)
-            
-            // Show up to 5 recent messages
-            let recentMessages = Array(viewModel.messages.prefix(5))
+
+            // Show up to recent messages limit
+            let recentMessages = Array(viewModel.messages.prefix(UIConstants.MenuBar.recentMessagesLimit))
             for message in recentMessages {
                 let messageItem = createMessageMenuItem(for: message)
                 menu.addItem(messageItem)
             }
             
-            if viewModel.messages.count > 5 {
-                let moreItem = NSMenuItem(title: "... and \(viewModel.messages.count - 5) more", action: #selector(openDashboardFromMenu), keyEquivalent: "")
+            if viewModel.messages.count > UIConstants.MenuBar.recentMessagesLimit {
+                let moreItem = NSMenuItem(title: "... and \(viewModel.messages.count - UIConstants.MenuBar.recentMessagesLimit) more", action: #selector(openDashboardFromMenu), keyEquivalent: "")
                 moreItem.target = self
                 let italicFont = NSFont.systemFont(ofSize: NSFont.systemFontSize - 1, weight: .regular)
                 let italicDescriptor = italicFont.fontDescriptor.withSymbolicTraits(.italic)
                 let finalFont = NSFont(descriptor: italicDescriptor, size: NSFont.systemFontSize - 1) ?? italicFont
-                moreItem.attributedTitle = NSAttributedString(string: "... and \(viewModel.messages.count - 5) more", attributes: [
+                moreItem.attributedTitle = NSAttributedString(string: "... and \(viewModel.messages.count - UIConstants.MenuBar.recentMessagesLimit) more", attributes: [
                     .font: finalFont,
                     .foregroundColor: NSColor.secondaryLabelColor
                 ])
@@ -236,7 +240,7 @@ class StatusBarController: NSObject, ObservableObject, NSWindowDelegate {
             snoozeStatusItem.isEnabled = false
             menu.addItem(snoozeStatusItem)
 
-            let clearSnoozeItem = NSMenuItem(title: "Clear Snooze", action: #selector(clearSnooze), keyEquivalent: "")
+            let clearSnoozeItem = NSMenuItem(title: StringConstants.MenuItems.clearSnooze, action: #selector(clearSnooze), keyEquivalent: "")
             clearSnoozeItem.target = self
             menu.addItem(clearSnoozeItem)
         } else {
@@ -251,7 +255,7 @@ class StatusBarController: NSObject, ObservableObject, NSWindowDelegate {
                 snoozeSubmenu.addItem(item)
             }
 
-            let snoozeItem = NSMenuItem(title: "Snooze Notifications", action: nil, keyEquivalent: "")
+            let snoozeItem = NSMenuItem(title: StringConstants.MenuItems.snoozeNotifications, action: nil, keyEquivalent: "")
             snoozeItem.submenu = snoozeSubmenu
             menu.addItem(snoozeItem)
         }
@@ -259,7 +263,7 @@ class StatusBarController: NSObject, ObservableObject, NSWindowDelegate {
         menu.addItem(NSMenuItem.separator())
 
         // Settings item
-        let settingsItem = NSMenuItem(title: "Settings...", action: #selector(openSettings), keyEquivalent: ",")
+        let settingsItem = NSMenuItem(title: StringConstants.MenuItems.settings, action: #selector(openSettings), keyEquivalent: ",")
         settingsItem.target = self
         menu.addItem(settingsItem)
         
@@ -267,7 +271,7 @@ class StatusBarController: NSObject, ObservableObject, NSWindowDelegate {
         
         // Connection toggle
         let connectionItem = NSMenuItem(
-            title: viewModel.isConnected ? "Disconnect" : "Connect",
+            title: viewModel.isConnected ? StringConstants.MenuItems.disconnect : StringConstants.MenuItems.connect,
             action: #selector(toggleConnection),
             keyEquivalent: ""
         )
@@ -275,14 +279,14 @@ class StatusBarController: NSObject, ObservableObject, NSWindowDelegate {
         menu.addItem(connectionItem)
         
         // Clear messages
-        let clearItem = NSMenuItem(title: "Clear Messages", action: #selector(clearMessages), keyEquivalent: "")
+        let clearItem = NSMenuItem(title: StringConstants.MenuItems.clearMessages, action: #selector(clearMessages), keyEquivalent: "")
         clearItem.target = self
         menu.addItem(clearItem)
         
         menu.addItem(NSMenuItem.separator())
         
         // Quit item
-        let quitItem = NSMenuItem(title: "Quit", action: #selector(quit), keyEquivalent: "q")
+        let quitItem = NSMenuItem(title: StringConstants.MenuItems.quit, action: #selector(quit), keyEquivalent: "q")
         quitItem.target = self
         menu.addItem(quitItem)
         
@@ -304,16 +308,14 @@ class StatusBarController: NSObject, ObservableObject, NSWindowDelegate {
             // Calculate position below menu bar (centered)
             guard let screen = NSScreen.main else { return }
             let screenFrame = screen.frame
-            let windowSize = CGSize(width: 500, height: 600)
-            
+            let windowSize = CGSize(width: UIConstants.Settings.width, height: UIConstants.Settings.height)
+
             // Calculate X position (centered)
             let initialX = (screenFrame.width - windowSize.width) / 2
-            
+
             // Position just below menu bar at TOP of screen
             // screenFrame.maxY is the top of the screen
-            let menuBarHeight: CGFloat = 25
-            let gap: CGFloat = 10
-            let initialY = screenFrame.maxY - menuBarHeight - windowSize.height - gap
+            let initialY = screenFrame.maxY - UIConstants.Settings.menuBarHeight - windowSize.height - UIConstants.Settings.topGap
             
             // Create new settings window with correct initial position
             let settingsView = SettingsView()
@@ -327,7 +329,7 @@ class StatusBarController: NSObject, ObservableObject, NSWindowDelegate {
                 backing: .buffered,
                 defer: false
             )
-            window.title = "Settings"
+            window.title = StringConstants.WindowTitles.settings
             window.contentViewController = hostingController
             window.isReleasedWhenClosed = false
             window.delegate = self
@@ -368,8 +370,44 @@ class StatusBarController: NSObject, ObservableObject, NSWindowDelegate {
         viewModel.clearSnooze()
     }
     
+    // MARK: - Global Event Monitoring
+
+    private func setupGlobalEventMonitor() {
+        // Remove existing monitor if any
+        if let monitor = globalEventMonitor {
+            NSEvent.removeMonitor(monitor)
+        }
+
+        // Add global monitor for mouse clicks outside the dashboard
+        globalEventMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) { [weak self] event in
+            self?.handleGlobalMouseEvent(event)
+        }
+    }
+
+    private func removeGlobalEventMonitor() {
+        if let monitor = globalEventMonitor {
+            NSEvent.removeMonitor(monitor)
+            globalEventMonitor = nil
+        }
+    }
+
+    private func handleGlobalMouseEvent(_ event: NSEvent) {
+        guard let window = dashboardWindow, window.isVisible else { return }
+
+        // Get the click location in screen coordinates
+        let windowLocation = NSEvent.mouseLocation
+
+        // Check if click is outside the dashboard window
+        if !window.frame.contains(windowLocation) {
+            // Close the dashboard
+            DispatchQueue.main.async {
+                window.close()
+            }
+        }
+    }
+
     // MARK: - Window Positioning
-    
+
     private func positionWindowNearMenuBar(_ window: NSWindow) {
         // Disable window restoration and tiling
         window.isRestorable = false
@@ -410,8 +448,8 @@ class StatusBarController: NSObject, ObservableObject, NSWindowDelegate {
     private func createMessageMenuItem(for message: NtfyMessage) -> NSMenuItem {
         // Create title with truncation
         let title = message.displayTitle
-        let messageText = message.message ?? "No message"
-        let truncatedMessage = messageText.count > 50 ? String(messageText.prefix(47)) + "..." : messageText
+        let messageText = message.message ?? StringConstants.NotificationContent.noMessage
+        let truncatedMessage = messageText.count > UIConstants.Content.maxMessagePreviewLength ? String(messageText.prefix(UIConstants.Content.maxMessagePreviewLength - 3)) + "..." : messageText
         
         // Format time
         let formatter = RelativeDateTimeFormatter()
@@ -456,10 +494,12 @@ class StatusBarController: NSObject, ObservableObject, NSWindowDelegate {
         print("Window will close")
         if let window = notification.object as? NSWindow {
             window.delegate = nil
-            
+
             // Determine which window is closing and clear the reference
             if window === dashboardWindow {
                 dashboardWindow = nil
+                // Remove global event monitor when dashboard closes
+                removeGlobalEventMonitor()
             } else if window === settingsWindow {
                 settingsWindow = nil
             }
@@ -476,5 +516,6 @@ class StatusBarController: NSObject, ObservableObject, NSWindowDelegate {
     
     deinit {
         NotificationCenter.default.removeObserver(self)
+        removeGlobalEventMonitor()
     }
 }

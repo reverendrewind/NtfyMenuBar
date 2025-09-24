@@ -48,11 +48,11 @@ class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
         
         // Enhanced branding with ntfy prefix and priority indicators
         let priorityEmoji = getPriorityEmoji(for: message.priority)
-        let brandedTitle = "ntfy: \(priorityEmoji)\(message.displayTitle)"
+        let brandedTitle = "\(StringConstants.NotificationContent.ntfyPrefix) \(priorityEmoji)\(message.displayTitle)"
         content.title = brandedTitle
         
         // Rich body content with metadata
-        let messageBody = message.message ?? "No message"
+        let messageBody = message.message ?? StringConstants.NotificationContent.noMessage
         let formattedBody = formatNotificationBody(message: messageBody, priority: message.priority, tags: message.tags)
         content.body = formattedBody
         
@@ -63,7 +63,7 @@ class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
         content.sound = getSoundForMessage(message, settings: settings)
         
         // Set notification category for interactive actions
-        content.categoryIdentifier = "NTFY_MESSAGE"
+        content.categoryIdentifier = StringConstants.NotificationCategories.ntfyMessage
         
         // Set badge based on priority
         if let priority = message.priority {
@@ -118,19 +118,19 @@ class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
             print("📱 User tapped notification: \(userInfo)")
             openDashboard()
             
-        case "OPEN_DASHBOARD":
+        case StringConstants.NotificationActions.openDashboard:
             // User pressed "Open dashboard" button
             print("📱 User requested dashboard: \(userInfo)")
             openDashboard()
             
-        case "MARK_READ":
+        case StringConstants.NotificationActions.markRead:
             // User pressed "Mark read" button
             print("📱 User marked as read: \(userInfo)")
             if let messageId = userInfo["messageId"] as? String {
                 clearNotification(withId: messageId)
             }
             
-        case "DISMISS":
+        case StringConstants.NotificationActions.dismiss:
             // User pressed "Dismiss" button
             print("📱 User dismissed: \(userInfo)")
             if let messageId = userInfo["messageId"] as? String {
@@ -159,26 +159,26 @@ class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
     private func setupNotificationCategories() {
         // Create actions for interactive notifications
         let openDashboardAction = UNNotificationAction(
-            identifier: "OPEN_DASHBOARD",
-            title: "Open dashboard",
+            identifier: StringConstants.NotificationActions.openDashboard,
+            title: StringConstants.MenuItems.openDashboard,
             options: [.foreground]
         )
         
         let markReadAction = UNNotificationAction(
-            identifier: "MARK_READ",
-            title: "Mark read",
+            identifier: StringConstants.NotificationActions.markRead,
+            title: StringConstants.NotificationActions.markReadTitle,
             options: []
         )
         
         let dismissAction = UNNotificationAction(
-            identifier: "DISMISS",
-            title: "Dismiss",
+            identifier: StringConstants.NotificationActions.dismiss,
+            title: StringConstants.NotificationActions.dismissTitle,
             options: [.destructive]
         )
         
         // Create category with actions
         let messageCategory = UNNotificationCategory(
-            identifier: "NTFY_MESSAGE",
+            identifier: StringConstants.NotificationCategories.ntfyMessage,
             actions: [openDashboardAction, markReadAction, dismissAction],
             intentIdentifiers: [],
             options: [.customDismissAction]
@@ -205,7 +205,7 @@ class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
         var components: [String] = []
         
         // Add the main message (truncated smartly)
-        let truncatedMessage = smartTruncate(message, maxLength: 150)
+        let truncatedMessage = smartTruncate(message, maxLength: AppConfig.Notifications.maxMessageLength)
         components.append(truncatedMessage)
         
         // Add priority info if significant
@@ -215,8 +215,8 @@ class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
         
         // Add tags if present
         if let tags = tags, !tags.isEmpty {
-            let tagString = tags.prefix(3).joined(separator: ", ")
-            let tagSuffix = tags.count > 3 ? " +\(tags.count - 3)" : ""
+            let tagString = tags.prefix(AppConfig.Notifications.maxTagsToShow).joined(separator: ", ")
+            let tagSuffix = tags.count > AppConfig.Notifications.maxTagsToShow ? " +\(tags.count - AppConfig.Notifications.maxTagsToShow)" : ""
             components.append("🏷️ Tags: \(tagString)\(tagSuffix)")
         }
         
@@ -280,12 +280,12 @@ class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
         let truncated = String(text.prefix(maxLength))
         if let lastSpaceIndex = truncated.lastIndex(of: " ") {
             let wordBoundaryTruncated = String(truncated[..<lastSpaceIndex])
-            if wordBoundaryTruncated.count >= maxLength * 3/4 { // At least 75% of desired length
-                return wordBoundaryTruncated + "..."
+            if wordBoundaryTruncated.count >= Int(Double(maxLength) * AppConfig.Notifications.smartTruncateThreshold) { // At least 75% of desired length
+                return wordBoundaryTruncated + AppConfig.Notifications.truncationSuffix
             }
         }
         
         // Fallback to character truncation
-        return String(text.prefix(maxLength - 3)) + "..."
+        return String(text.prefix(maxLength - AppConfig.Notifications.truncationSuffix.count)) + AppConfig.Notifications.truncationSuffix
     }
 }

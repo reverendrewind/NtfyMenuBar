@@ -53,7 +53,7 @@ class NtfyService: ObservableObject {
     private var reconnectTimer: Timer?
     private var fallbackTimer: Timer?
     private var reconnectAttempts = 0
-    private let maxReconnectAttempts = 3 // Reduced to try fallbacks faster
+    private let maxReconnectAttempts = AppConfig.Network.maxReconnectAttempts
     private let notificationManager = NotificationManager.shared
     private var keepaliveTimer: Timer?
     private var networkMonitor: NetworkMonitor = .shared
@@ -157,7 +157,7 @@ class NtfyService: ObservableObject {
         updateConnectionQuality(.unknown)
 
         var request = URLRequest(url: url)
-        request.timeoutInterval = 15 // Shorter timeout for faster fallback
+        request.timeoutInterval = AppConfig.Network.timeoutInterval
         request.setValue("text/event-stream", forHTTPHeaderField: "Accept")
         request.setValue("no-cache", forHTTPHeaderField: "Cache-Control")
         request.setValue("keep-alive", forHTTPHeaderField: "Connection")
@@ -405,7 +405,7 @@ class NtfyService: ObservableObject {
     
     private func startKeepaliveTimer() {
         keepaliveTimer?.invalidate()
-        keepaliveTimer = Timer.scheduledTimer(withTimeInterval: 25.0, repeats: true) { [weak self] _ in
+        keepaliveTimer = Timer.scheduledTimer(withTimeInterval: AppConfig.Network.keepaliveInterval, repeats: true) { [weak self] _ in
             Task { @MainActor [weak self] in
                 // Monitor connection health - if no data received in reasonable time, reconnect
                 guard let self = self, self.isConnected else { return }
@@ -422,7 +422,7 @@ class NtfyService: ObservableObject {
         }
 
         reconnectAttempts += 1
-        let delay = min(pow(2.0, Double(reconnectAttempts)), 15.0) // Shorter max delay for faster fallback
+        let delay = min(pow(2.0, Double(reconnectAttempts)) * AppConfig.Network.baseBackoffDelay, AppConfig.Network.maxBackoffDelay)
 
         print("🔄 Scheduling reconnect attempt \(reconnectAttempts) in \(delay) seconds")
 
@@ -448,7 +448,7 @@ class NtfyService: ObservableObject {
         let timeSinceConnection = Date().timeIntervalSince(lastConnection)
 
         // Improve quality based on successful activity
-        if timeSinceConnection < 300 { // Less than 5 minutes
+        if timeSinceConnection < AppConfig.Network.connectionHealthCheckInterval * 10 { // Less than 5 minutes
             if connectionQuality == .poor || connectionQuality == .failing {
                 updateConnectionQuality(.good)
             } else if connectionQuality == .good && timeSinceConnection < 60 {

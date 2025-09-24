@@ -62,7 +62,7 @@ struct ContentView: View {
             footerView
         }
         .padding()
-        .frame(width: 320, height: 300)
+        .frame(width: UIConstants.Dashboard.width, height: UIConstants.Dashboard.height)
         .background(Color.theme.windowBackground)
         .onExitCommand {
             // Close on Escape key
