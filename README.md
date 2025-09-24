@@ -538,11 +538,11 @@ curl -X POST https://your-ntfy-server.com/your-topic \
 
 For a complete list of changes, new features, and bug fixes, see [CHANGELOG.md](CHANGELOG.md).
 
-### Latest Release - v2.4.0
-- 🔕 **Notification Snoozing**: Comprehensive snoozing system with 8 preset durations
-- 🎨 **Custom Snooze Icon**: Branded grayed-out bell with diagonal slash
-- 🐛 **Bug Fixes**: Dashboard header display, snooze functionality, and countdown accuracy
-- ⚡ **Performance**: Enhanced Swift 6 compatibility and improved timer management
+### Latest Release - v2.5.0
+- 🔧 **Simplified Architecture**: Removed Shortcuts support to focus on core functionality
+- ✅ **Fixed Settings**: Resolved settings save/load issues
+- 📦 **Cleaner Codebase**: Removed app group complications for better reliability
+- 🚀 **Improved Stability**: Streamlined app for better performance
 
 ## Acknowledgments
 

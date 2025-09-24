@@ -10,10 +10,6 @@
 	<string>ntfy</string>
 	<key>NSHumanReadableCopyright</key>
 	<string>© 2025 Rimskij Papa</string>
-	<key>NSAppleScriptEnabled</key>
-	<true/>
-	<key>OSAScriptingDefinition</key>
-	<string>NtfyMenuBar.sdef</string>
 	<key>NSSupportsLiveActivities</key>
 	<false/>
 	<key>NSUserActivityTypes</key>
@@ -21,12 +17,5 @@
 		<string>SendNtfyMessageIntent</string>
 		<string>SnoozeNotificationsIntent</string>
 	</array>
-	<key>INIntentsSupported</key>
-	<array>
-		<string>SendNtfyMessageIntent</string>
-		<string>SnoozeNotificationsIntent</string>
-	</array>
-	<key>INIntentsRestrictedWhileLocked</key>
-	<array/>
 </dict>
 </plist>

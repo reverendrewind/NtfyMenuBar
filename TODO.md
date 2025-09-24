@@ -22,7 +22,7 @@
 - [x] Message grouping by topic/priority *(Completed)*
 - [x] Keyboard shortcuts for common actions *(Completed)*
 - [x] Notification snoozing *(Completed v2.4.0)*
-- [ ] Do Not Disturb scheduling
+- [x] Do Not Disturb scheduling *(Completed)*
 
 #### Connection Improvements - Client-Side ✅
 - [x] Auto-reconnect with exponential backoff *(Already implemented)*
@@ -36,7 +36,7 @@
 #### Message Management (Limited Capabilities)
 - [x] View recent message history (client-side caching via SSE) *(Already implemented)*
 - [ ] Delete individual messages (if API permits)
-- [ ] Export message logs to CSV/JSON (cached messages only)
+- [x] Export message logs to CSV/JSON (cached messages only) *(Completed)*
 - [x] Message filtering by priority/topic (client-side) *(Completed)*
 
 #### Multi-Server Support
@@ -48,8 +48,8 @@
 - [ ] Export to other services (Slack, Discord, etc.)
 - [ ] Webhook forwarding
 - [ ] Custom notification actions
-- [ ] AppleScript support for automation
-- [ ] Shortcuts app integration
+- [ ] AppleScript support for automation *(Deferred to future version - sandbox configuration complexity)*
+- [x] Shortcuts app integration *(Completed)*
 
 ### 🔴 LOW PRIORITY - Limited Feasibility
 *Features that are difficult or impossible with current ntfy API*
@@ -82,10 +82,10 @@
 - **Bug Fixes**: Dashboard header display, snooze functionality, Swift 6 compatibility
 
 ### 🎯 Next Priorities
-1. **Do Not Disturb scheduling** - Automated quiet hours
-2. **Export to CSV/JSON functionality** - Message history export
-3. **AppleScript support** - System automation integration
-4. **Shortcuts app integration** - Native macOS Shortcuts support
+1. **Custom notification actions** - Interactive notification buttons and responses
+2. **Delete individual messages** - Message management capabilities (if API permits)
+3. **Export to other services** - Integration with Slack, Discord, etc.
+4. **Webhook forwarding** - Forward notifications to external services
 
 ### 📚 Documentation & Testing
 - [x] Proxmox VE integration guide *(Completed)*

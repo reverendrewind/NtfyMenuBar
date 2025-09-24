@@ -5,6 +5,32 @@ All notable changes to NtfyMenuBar will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.5.0] - 2025-09-24
+
+### Changed
+- **Simplified app architecture**
+  - Removed Shortcuts/App Intents support to focus on core functionality
+  - Streamlined settings management without app group complications
+  - Improved reliability of settings save/load functionality
+
+### Removed
+- **Shortcuts integration**
+  - Removed NtfyIntents extension and all App Intent support
+  - Removed app group entitlements to simplify entitlements configuration
+  - Shortcuts functionality deferred to future release for better implementation
+
+### Fixed
+- **Settings persistence**
+  - Resolved "Save" button being inactive in settings panel
+  - Fixed settings not persisting due to app group configuration issues
+  - Simplified UserDefaults usage for more reliable storage
+
+### Technical Changes
+- Removed `NtfyIntents` target from Xcode project
+- Reverted `SettingsManager` to use standard UserDefaults only
+- Removed app group entitlements from main app bundle
+- Cleaned up project configuration for simpler maintenance
+
 ## [v2.4.0] - 2024-09-21
 
 ### Added

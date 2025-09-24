@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import Intents
 
 class AppDelegate: NSObject, NSApplicationDelegate {
     var statusBarController: StatusBarController?
@@ -14,13 +15,17 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         // Ensure app stays out of dock - force accessory policy
         NSApplication.shared.setActivationPolicy(.accessory)
-        
+
         // Initialize status bar controller here where we have proper app lifecycle
         let viewModel = NtfyViewModel()
         let themeManager = ThemeManager()
         self.themeManager = themeManager
         statusBarController = StatusBarController(viewModel: viewModel, themeManager: themeManager)
-        
+
+        // Register Intent handlers for macOS
+        _ = IntentHandler()
+        print("🎯 Intent handler registered")
+
         // Additional check - hide from dock completely
         if NSApplication.shared.activationPolicy() != .accessory {
             print("⚠️ Activation policy not accessory, forcing...")

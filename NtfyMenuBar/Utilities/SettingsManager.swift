@@ -12,13 +12,12 @@ struct SettingsManager {
     private static let settingsKey = "NtfySettings"
     private static let passwordKey = "NtfyPassword"
     private static let tokenKey = "NtfyAccessToken"
-    
     static func saveSettings(_ settings: NtfySettings) {
         if let data = try? JSONEncoder().encode(settings) {
             UserDefaults.standard.set(data, forKey: settingsKey)
         }
     }
-    
+
     static func loadSettings() -> NtfySettings {
         guard let data = UserDefaults.standard.data(forKey: settingsKey),
               let settings = try? JSONDecoder().decode(NtfySettings.self, from: data) else {
