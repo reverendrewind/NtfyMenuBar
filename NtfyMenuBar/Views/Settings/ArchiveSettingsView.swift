@@ -23,328 +23,63 @@ struct ArchiveSettingsView: View {
     @Binding var archiveSearchText: String
     @Binding var selectedArchiveTopic: String
 
+    // Collapsible section states
+    @State private var statisticsExpanded = true
+    @State private var browseExpanded = false
+    @State private var exportExpanded = false
+    @State private var managementExpanded = false
+
+    // Export options
+    @State private var exportScope: ExportScope = .recent
+    @State private var exportFormat: ExportFormat = .json
+
+    enum ExportScope: String, CaseIterable {
+        case recent = "Last 7 days"
+        case all = "All messages"
+    }
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 20) {
-            VStack(alignment: .leading, spacing: 12) {
-                Text("Message Archive")
+        VStack(alignment: .leading, spacing: 12) {
+            // Statistics Section
+            DisclosureGroup(isExpanded: $statisticsExpanded) {
+                statisticsContent
+                    .padding(.top, 8)
+            } label: {
+                Label("Archive statistics", systemImage: "chart.bar.fill")
                     .font(.headline)
-
-                Text("Messages are automatically archived for persistent storage and can be exported at any time.")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-
-                // Archive statistics
-                if isLoadingArchiveStats {
-                    HStack {
-                        ProgressView()
-                            .scaleEffect(0.8)
-                        Text("Loading archive statistics...")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    }
-                } else if let stats = archiveStatistics {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Archive Statistics")
-                            .font(.subheadline)
-                            .fontWeight(.medium)
-
-                        HStack(spacing: 20) {
-                            VStack(alignment: .leading, spacing: 8) {
-                                HStack {
-                                    Text("Total Messages:")
-                                        .font(.caption)
-                                        .foregroundColor(.secondary)
-                                    Spacer()
-                                    Text("\(stats.totalMessages)")
-                                        .font(.caption)
-                                        .fontWeight(.medium)
-                                }
-
-                                HStack {
-                                    Text("Archive Size:")
-                                        .font(.caption)
-                                        .foregroundColor(.secondary)
-                                    Spacer()
-                                    Text(stats.formattedSize)
-                                        .font(.caption)
-                                        .fontWeight(.medium)
-                                }
-                            }
-
-                            VStack(alignment: .leading, spacing: 8) {
-                                HStack {
-                                    Text("Date Range:")
-                                        .font(.caption)
-                                        .foregroundColor(.secondary)
-                                    Spacer()
-                                    Text(stats.dateRange)
-                                        .font(.caption)
-                                        .fontWeight(.medium)
-                                        .lineLimit(1)
-                                        .truncationMode(.middle)
-                                }
-
-                                HStack {
-                                    Text("Archive Files:")
-                                        .font(.caption)
-                                        .foregroundColor(.secondary)
-                                    Spacer()
-                                    Text("\(stats.archiveFilesCount)")
-                                        .font(.caption)
-                                        .fontWeight(.medium)
-                                }
-                            }
-                        }
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 12)
-                        .background(Color.secondary.opacity(0.1))
-                        .cornerRadius(8)
-
-                        // Top topics
-                        if !stats.messagesByTopic.isEmpty {
-                            VStack(alignment: .leading, spacing: 8) {
-                                Text("Top Topics:")
-                                    .font(.caption)
-                                    .fontWeight(.medium)
-                                    .foregroundColor(.secondary)
-
-                                let sortedTopics = stats.messagesByTopic.sorted { $0.value > $1.value }.prefix(8)
-                                LazyVGrid(columns: [
-                                    GridItem(.flexible()),
-                                    GridItem(.flexible())
-                                ], spacing: 6) {
-                                    ForEach(Array(sortedTopics), id: \.key) { topic, count in
-                                        HStack {
-                                            Text("• \(topic)")
-                                                .font(.caption2)
-                                                .lineLimit(1)
-                                                .truncationMode(.tail)
-                                            Spacer()
-                                            Text("\(count)")
-                                                .font(.caption2)
-                                                .fontWeight(.medium)
-                                                .foregroundColor(.blue)
-                                        }
-                                    }
-                                }
-                            }
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 12)
-                            .background(Color.blue.opacity(0.1))
-                            .cornerRadius(8)
-                        }
-                    }
-                }
-
-                Button("Refresh Statistics") {
-                    loadArchiveStatistics()
-                }
-                .buttonStyle(.bordered)
-                .disabled(isLoadingArchiveStats)
             }
 
             Divider()
 
-            VStack(alignment: .leading, spacing: 12) {
-                Text("Browse Archived Messages")
+            // Browse Section
+            DisclosureGroup(isExpanded: $browseExpanded) {
+                browseContent
+                    .padding(.top, 8)
+            } label: {
+                Label("Browse messages", systemImage: "magnifyingglass")
                     .font(.headline)
-
-                Text("View and search through your archived message history.")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-
-                HStack {
-                    Button(showingArchiveBrowser ? "Hide Archive Browser" : "Show Archive Browser") {
-                        showingArchiveBrowser.toggle()
-                        if showingArchiveBrowser && archivedMessages.isEmpty {
-                            loadArchivedMessages()
-                        }
-                    }
-                    .buttonStyle(.borderedProminent)
-
-                    if showingArchiveBrowser {
-                        Button("Load Recent (7 days)") {
-                            loadRecentArchivedMessages()
-                        }
-                        .buttonStyle(.bordered)
-                        .font(.caption)
-
-                        Button("Load All") {
-                            loadArchivedMessages()
-                        }
-                        .buttonStyle(.bordered)
-                        .font(.caption)
-                    }
-
-                    if showingArchiveBrowser && !archivedMessages.isEmpty {
-                        Spacer()
-                        Text("\(filteredArchivedMessages.count) of \(archivedMessages.count) messages")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    }
-                }
-
-                if showingArchiveBrowser {
-                    if isLoadingArchive {
-                        HStack {
-                            ProgressView()
-                                .scaleEffect(0.8)
-                            Text("Loading archived messages...")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                        }
-                        .padding(.vertical, 20)
-                    } else if !archivedMessages.isEmpty {
-                        VStack(spacing: 12) {
-                            // Search and filter controls
-                            HStack(spacing: 12) {
-                                HStack {
-                                    Image(systemName: "magnifyingglass")
-                                        .font(.system(size: 12))
-                                        .foregroundColor(.secondary)
-                                    TextField("Search messages...", text: $archiveSearchText)
-                                        .textFieldStyle(.plain)
-                                        .font(.caption)
-                                }
-                                .padding(.horizontal, 8)
-                                .padding(.vertical, 6)
-                                .background(Color.secondary.opacity(0.1))
-                                .cornerRadius(6)
-
-                                Picker("Topic", selection: $selectedArchiveTopic) {
-                                    Text("All Topics").tag("All")
-                                    ForEach(archiveTopics, id: \.self) { topic in
-                                        Text(topic).tag(topic)
-                                    }
-                                }
-                                .pickerStyle(.menu)
-                                .frame(width: 120)
-                            }
-
-                            // Message list
-                            ScrollView {
-                                LazyVStack(spacing: 4) {
-                                    ForEach(filteredArchivedMessages.prefix(100), id: \.uniqueId) { message in
-                                        ArchiveMessageRowView(message: message)
-                                    }
-
-                                    if filteredArchivedMessages.count > 100 {
-                                        Text("Showing first 100 messages. Use search to narrow results.")
-                                            .font(.caption)
-                                            .foregroundColor(.secondary)
-                                            .padding(.vertical, 8)
-                                    }
-                                }
-                            }
-                            .frame(height: 300)
-                            .background(Color.secondary.opacity(0.05))
-                            .cornerRadius(8)
-                        }
-                    } else {
-                        VStack(spacing: 8) {
-                            Image(systemName: "archivebox")
-                                .font(.title2)
-                                .foregroundColor(.secondary)
-                            Text("No archived messages found")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                        }
-                        .padding(.vertical, 20)
-                    }
-                }
             }
 
             Divider()
 
-            VStack(alignment: .leading, spacing: 12) {
-                Text("Export Messages")
+            // Export Section
+            DisclosureGroup(isExpanded: $exportExpanded) {
+                exportContent
+                    .padding(.top, 8)
+            } label: {
+                Label("Export messages", systemImage: "square.and.arrow.up")
                     .font(.headline)
-
-                Text("Export your messages to CSV or JSON format for analysis or backup. Files are saved to the application's export folder.")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-
-                // Export location info
-                HStack {
-                    Image(systemName: "folder")
-                        .foregroundColor(.secondary)
-                    Text("Export location:")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                    Button("Show in Finder") {
-                        revealExportsFolder()
-                    }
-                    .font(.caption)
-                    .buttonStyle(.link)
-                    Spacer()
-                }
-
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Recent messages (last 7 days)")
-                        .font(.subheadline)
-                        .fontWeight(.medium)
-
-                    HStack(spacing: 12) {
-                        ForEach(ExportFormat.allCases, id: \.self) { format in
-                            Button("Export as \(format.displayName)") {
-                                exportRecentMessages(format: format)
-                            }
-                            .buttonStyle(.bordered)
-                        }
-                    }
-                }
-
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("All archived messages")
-                        .font(.subheadline)
-                        .fontWeight(.medium)
-
-                    HStack(spacing: 12) {
-                        ForEach(ExportFormat.allCases, id: \.self) { format in
-                            Button("Export all as \(format.displayName)") {
-                                exportAllArchivedMessages(format: format)
-                            }
-                            .buttonStyle(.borderedProminent)
-                        }
-                    }
-                }
             }
 
             Divider()
 
-            VStack(alignment: .leading, spacing: 12) {
-                Text("Archive Management")
+            // Management Section
+            DisclosureGroup(isExpanded: $managementExpanded) {
+                managementContent
+                    .padding(.top, 8)
+            } label: {
+                Label("Archive management", systemImage: "trash")
                     .font(.headline)
-
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Clear old messages")
-                        .font(.subheadline)
-                        .fontWeight(.medium)
-
-                    Text("Remove archived messages older than the specified number of days.")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-
-                    HStack {
-                        Text("Delete messages older than:")
-                            .font(.caption)
-                        Spacer()
-                        Picker("Days", selection: $archiveClearDays) {
-                            Text("7 days").tag(7)
-                            Text("30 days").tag(30)
-                            Text("90 days").tag(90)
-                            Text("1 year").tag(365)
-                        }
-                        .pickerStyle(.menu)
-                        .frame(width: 120)
-                    }
-
-                    Button("Clear Old Messages") {
-                        showingClearArchiveAlert = true
-                    }
-                    .buttonStyle(.bordered)
-                    .foregroundColor(.red)
-                }
             }
         }
         .onAppear {
@@ -352,13 +87,285 @@ struct ArchiveSettingsView: View {
                 loadArchiveStatistics()
             }
         }
-        .alert("Clear Archive Messages", isPresented: $showingClearArchiveAlert) {
+        .alert("Clear archive messages", isPresented: $showingClearArchiveAlert) {
             Button("Cancel", role: .cancel) { }
             Button("Clear", role: .destructive) {
                 clearOldArchivedMessages()
             }
         } message: {
             Text("Are you sure you want to delete all archived messages older than \(archiveClearDays) days? This action cannot be undone.")
+        }
+    }
+
+    // MARK: - Statistics Content
+
+    private var statisticsContent: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            if isLoadingArchiveStats {
+                HStack {
+                    ProgressView()
+                        .scaleEffect(0.7)
+                    Text("Loading statistics...")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+            } else if let stats = archiveStatistics {
+                // Compact 2x2 grid for main stats
+                LazyVGrid(columns: [
+                    GridItem(.flexible()),
+                    GridItem(.flexible())
+                ], spacing: 8) {
+                    statItem(label: "Messages", value: "\(stats.totalMessages)")
+                    statItem(label: "Size", value: stats.formattedSize)
+                    statItem(label: "Date Range", value: stats.dateRange)
+                    statItem(label: "Files", value: "\(stats.archiveFilesCount)")
+                }
+                .padding(8)
+                .background(Color.secondary.opacity(0.1))
+                .cornerRadius(6)
+
+                // Compact top topics display
+                if !stats.messagesByTopic.isEmpty {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Top topics:")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+
+                        let topTopics = stats.messagesByTopic.sorted { $0.value > $1.value }.prefix(4)
+                        LazyVGrid(columns: [
+                            GridItem(.flexible()),
+                            GridItem(.flexible())
+                        ], spacing: 4) {
+                            ForEach(Array(topTopics), id: \.key) { topic, count in
+                                HStack {
+                                    Text("\(topic)")
+                                        .font(.caption2)
+                                        .lineLimit(1)
+                                        .truncationMode(.tail)
+                                    Spacer()
+                                    Text("\(count)")
+                                        .font(.caption2)
+                                        .fontWeight(.medium)
+                                        .foregroundColor(.blue)
+                                }
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 2)
+                                .background(Color.blue.opacity(0.05))
+                                .cornerRadius(4)
+                            }
+                        }
+
+                        if stats.messagesByTopic.count > 4 {
+                            Text("+\(stats.messagesByTopic.count - 4) more topics")
+                                .font(.caption2)
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                }
+            } else {
+                Text("No statistics available")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+
+            Button("Refresh") {
+                loadArchiveStatistics()
+            }
+            .buttonStyle(.bordered)
+            .controlSize(.small)
+            .disabled(isLoadingArchiveStats)
+        }
+    }
+
+    private func statItem(label: String, value: String) -> some View {
+        HStack {
+            Text(label + ":")
+                .font(.caption)
+                .foregroundColor(.secondary)
+            Spacer()
+            Text(value)
+                .font(.caption)
+                .fontWeight(.medium)
+                .lineLimit(1)
+                .truncationMode(.middle)
+        }
+    }
+
+    // MARK: - Browse Content
+
+    private var browseContent: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            // Search and filter controls - split into multiple rows if needed
+            VStack(spacing: 8) {
+                // First row: Search and Topic picker
+                HStack(spacing: 8) {
+                    HStack {
+                        Image(systemName: "magnifyingglass")
+                            .font(.system(size: 11))
+                            .foregroundColor(.secondary)
+                        TextField("Search...", text: $archiveSearchText)
+                            .textFieldStyle(.plain)
+                            .font(.caption)
+                    }
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 4)
+                    .background(Color.secondary.opacity(0.1))
+                    .cornerRadius(4)
+                    .frame(minWidth: 120)
+
+                    Picker("", selection: $selectedArchiveTopic) {
+                        Text("All topics").tag("All")
+                        ForEach(archiveTopics, id: \.self) { topic in
+                            Text(topic).tag(topic)
+                        }
+                    }
+                    .pickerStyle(.menu)
+                    .frame(minWidth: 100)
+                    .controlSize(.small)
+
+                    Spacer()
+
+                    if !archivedMessages.isEmpty {
+                        Text("\(filteredArchivedMessages.count) messages")
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
+                    }
+                }
+
+                // Second row: Load buttons (only when no messages loaded)
+                if archivedMessages.isEmpty {
+                    HStack(spacing: 8) {
+                        Button("Load recent (7 days)") {
+                            loadRecentArchivedMessages()
+                        }
+                        .buttonStyle(.bordered)
+                        .controlSize(.small)
+
+                        Button("Load all messages") {
+                            loadArchivedMessages()
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .controlSize(.small)
+
+                        Spacer()
+                    }
+                }
+            }
+
+            // Message list (only if loaded)
+            if isLoadingArchive {
+                HStack {
+                    ProgressView()
+                        .scaleEffect(0.7)
+                    Text("Loading messages...")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+                .padding(.vertical, 8)
+            } else if !archivedMessages.isEmpty {
+                ScrollView {
+                    LazyVStack(spacing: 2) {
+                        ForEach(filteredArchivedMessages.prefix(50), id: \.uniqueId) { message in
+                            ArchiveMessageRowView(message: message)
+                        }
+
+                        if filteredArchivedMessages.count > 50 {
+                            Text("Showing first 50 of \(filteredArchivedMessages.count)")
+                                .font(.caption2)
+                                .foregroundColor(.secondary)
+                                .padding(.vertical, 4)
+                        }
+                    }
+                }
+                .frame(height: 180)
+                .background(Color.secondary.opacity(0.05))
+                .cornerRadius(6)
+            }
+        }
+    }
+
+    // MARK: - Export Content
+
+    private var exportContent: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            // Export controls split into two rows for better layout
+            VStack(spacing: 8) {
+                // First row: Selection controls
+                HStack(spacing: 8) {
+                    Text("Export:")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+
+                    Picker("Scope", selection: $exportScope) {
+                        ForEach(ExportScope.allCases, id: \.self) { scope in
+                            Text(scope.rawValue).tag(scope)
+                        }
+                    }
+                    .pickerStyle(.menu)
+                    .frame(minWidth: 100)
+                    .controlSize(.small)
+
+                    Text("as")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+
+                    Picker("Format", selection: $exportFormat) {
+                        ForEach(ExportFormat.allCases, id: \.self) { format in
+                            Text(format.displayName).tag(format)
+                        }
+                    }
+                    .pickerStyle(.menu)
+                    .frame(minWidth: 70)
+                    .controlSize(.small)
+
+                    Spacer()
+                }
+
+                // Second row: Action buttons
+                HStack(spacing: 8) {
+                    Button("Export now") {
+                        performExport()
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.small)
+
+                    Button("Show exports folder") {
+                        revealExportsFolder()
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
+
+                    Spacer()
+                }
+            }
+        }
+    }
+
+    // MARK: - Management Content
+
+    private var managementContent: some View {
+        HStack {
+            Text("Clear messages older than:")
+                .font(.caption)
+
+            Picker("", selection: $archiveClearDays) {
+                Text("7 days").tag(7)
+                Text("30 days").tag(30)
+                Text("90 days").tag(90)
+                Text("1 year").tag(365)
+            }
+            .pickerStyle(.menu)
+            .frame(width: 90)
+            .controlSize(.small)
+
+            Button("Clear") {
+                showingClearArchiveAlert = true
+            }
+            .buttonStyle(.bordered)
+            .controlSize(.small)
+            .foregroundColor(.red)
+
+            Spacer()
         }
     }
 
@@ -389,6 +396,15 @@ struct ArchiveSettingsView: View {
         }
 
         return messages
+    }
+
+    private func performExport() {
+        switch exportScope {
+        case .recent:
+            exportRecentMessages(format: exportFormat)
+        case .all:
+            exportAllArchivedMessages(format: exportFormat)
+        }
     }
 
     private func loadArchiveStatistics() {
@@ -473,11 +489,9 @@ struct ArchiveSettingsView: View {
     private func handleExportResult(_ result: Result<URL, Error>, messageCount: Int, format: ExportFormat) {
         switch result {
         case .success(let url):
-            print("✅ Successfully exported \(messageCount) messages to \(url.path)")
-
             // Show success notification
             let content = UNMutableNotificationContent()
-            content.title = "Export Complete"
+            content.title = "Export complete"
             content.body = "Exported \(messageCount) messages as \(format.displayName)"
             content.sound = .default
 
@@ -487,21 +501,15 @@ struct ArchiveSettingsView: View {
                 trigger: nil
             )
 
-            UNUserNotificationCenter.current().add(request) { error in
-                if let error = error {
-                    print("❌ Failed to show export notification: \(error)")
-                }
-            }
+            UNUserNotificationCenter.current().add(request)
 
             // Reveal in Finder
             NSWorkspace.shared.activateFileViewerSelecting([url])
 
         case .failure(let error):
-            print("❌ Failed to export messages: \(error.localizedDescription)")
-
             // Show error alert
             let alert = NSAlert()
-            alert.messageText = "Export Failed"
+            alert.messageText = "Export failed"
             alert.informativeText = error.localizedDescription
             alert.alertStyle = .critical
             alert.addButton(withTitle: "OK")

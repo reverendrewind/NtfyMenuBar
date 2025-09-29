@@ -33,6 +33,7 @@ class NtfyViewModel: ObservableObject {
     
     init() {
         self.settings = SettingsManager.loadSettings()
+        Logger.shared.info("📱 NtfyViewModel initialized with settings: serverURL=\(settings.serverURL), topics=\(settings.topics), isConfigured=\(settings.isConfigured)")
         setupService()
         setupSnoozeState()
         loadRecentArchivedMessages()
@@ -43,13 +44,22 @@ class NtfyViewModel: ObservableObject {
             Task {
                 try? await Task.sleep(nanoseconds: 500_000_000) // 0.5 seconds
                 await MainActor.run {
-                    print("🚀 Autoconnecting to configured server...")
+                    Logger.shared.info("🚀 Autoconnecting to configured server...")
                     connect()
                 }
             }
         }
     }
-    
+
+    deinit {
+        // Ensure timer is invalidated on deallocation
+        snoozeTimer?.invalidate()
+        snoozeTimer = nil
+
+        // Cancel any remaining combine subscriptions
+        cancellables.removeAll()
+    }
+
     func connect() {
         guard settings.isConfigured else {
             connectionError = "Please configure server settings first"
@@ -72,7 +82,7 @@ class NtfyViewModel: ObservableObject {
         settings.lastClearedTimestamp = Date()
         updateSettings(settings)
 
-        print("🗑️ Cleared messages from list, archived messages preserved")
+        Logger.shared.info("🗑️ Cleared messages from list, archived messages preserved")
     }
     
     func updateSettings(_ newSettings: NtfySettings) {
@@ -121,7 +131,7 @@ class NtfyViewModel: ObservableObject {
 
                 self.messages = allMessages
                 self.hasUnreadMessages = !allMessages.isEmpty
-                print("📱 Merged messages: \(newMessages.count) new, \(allMessages.count) total")
+                Logger.shared.debug("📱 Merged messages: \(newMessages.count) new, \(allMessages.count) total")
             }
             .store(in: &cancellables)
     }
@@ -169,7 +179,7 @@ class NtfyViewModel: ObservableObject {
         let minutes = Int(snoozeInterval / 60)
         ShortcutsDonator.donateSnooze(minutes: minutes)
 
-        print("🔕 Notifications snoozed for \(duration.displayName) until \(endTime)")
+        Logger.shared.info("🔕 Notifications snoozed for \(duration.displayName) until \(endTime)")
     }
 
     func clearSnooze() {
@@ -186,14 +196,21 @@ class NtfyViewModel: ObservableObject {
         snoozeTimer?.invalidate()
         snoozeTimer = nil
 
-        print("🔔 Snooze cleared - notifications enabled")
+        Logger.shared.info("🔔 Snooze cleared - notifications enabled")
     }
 
     private func startSnoozeTimer() {
+        // Always invalidate existing timer first
         snoozeTimer?.invalidate()
+        snoozeTimer = nil
 
-        snoozeTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
-            guard let self = self else { return }
+        // Create new timer with proper error handling
+        snoozeTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] timer in
+            guard let self = self else {
+                // If self is deallocated, invalidate the timer
+                timer.invalidate()
+                return
+            }
 
             Task { @MainActor [weak self] in
                 guard let self = self else { return }
@@ -252,7 +269,7 @@ class NtfyViewModel: ObservableObject {
 
                 self.messages = Array(uniqueMessages.prefix(self.settings.maxRecentMessages))
                 self.hasUnreadMessages = !self.messages.isEmpty
-                print("📂 Loaded \(self.messages.count) recent archived messages (deduplicated, cleared timestamp: \(self.settings.lastClearedTimestamp?.description ?? "none"))")
+                Logger.shared.debug("📂 Loaded \(self.messages.count) recent archived messages (deduplicated, cleared timestamp: \(self.settings.lastClearedTimestamp?.description ?? "none"))")
             }
         }
     }
@@ -275,7 +292,7 @@ class NtfyViewModel: ObservableObject {
                 loadRecentArchivedMessages()
             }
 
-            print("🗑️ Cleared archived messages older than \(days) days")
+            Logger.shared.info("🗑️ Cleared archived messages older than \(days) days")
         }
     }
 

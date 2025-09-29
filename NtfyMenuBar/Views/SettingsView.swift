@@ -16,8 +16,6 @@ struct SettingsView: View {
 
     @State private var serverURL: String = ""
     @State private var topics: [String] = []
-    @State private var newTopic: String = ""
-    @State private var topicValidationError: String = ""
     @State private var authMethod: AuthenticationMethod = .basicAuth
     @State private var username: String = ""
     @State private var password: String = ""
@@ -103,17 +101,60 @@ struct SettingsView: View {
                 VStack(alignment: .leading, spacing: 20) {
                     switch selectedTab {
                     case .connection:
-                        connectionSettingsView
+                        ConnectionSettingsView(
+                            serverURL: $serverURL,
+                            topics: $topics,
+                            authMethod: $authMethod,
+                            username: $username,
+                            password: $password,
+                            accessToken: $accessToken,
+                            autoConnect: $autoConnect
+                        )
                     case .tokens:
-                        accessTokensView
+                        AccessTokensSettingsView(
+                            serverURL: $serverURL,
+                            authMethod: $authMethod,
+                            username: $username,
+                            password: $password,
+                            accessToken: $accessToken,
+                            accessTokens: $accessTokens,
+                            newTokenLabel: $newTokenLabel,
+                            newTokenExpiration: $newTokenExpiration,
+                            isGeneratingToken: $isGeneratingToken,
+                            generatedToken: $generatedToken,
+                            tokenError: $tokenError
+                        )
                     case .fallbacks:
-                        fallbackServersView
+                        FallbackServersSettingsView(
+                            fallbackServers: $fallbackServers,
+                            enableFallbackServers: $enableFallbackServers,
+                            fallbackRetryDelay: $fallbackRetryDelay,
+                            editingServer: $editingServer,
+                            showingServerEditor: $showingServerEditor
+                        )
                     case .dnd:
-                        dndSettingsView
+                        DNDSettingsView(
+                            isDNDScheduleEnabled: $isDNDScheduleEnabled,
+                            dndStartTime: $dndStartTime,
+                            dndEndTime: $dndEndTime,
+                            dndDaysOfWeek: $dndDaysOfWeek
+                        )
+                        .environmentObject(viewModel)
                     case .archive:
-                        archiveSettingsView
+                        ArchiveSettingsView(
+                            archiveStatistics: $archiveStatistics,
+                            isLoadingArchiveStats: $isLoadingArchiveStats,
+                            showingClearArchiveAlert: $showingClearArchiveAlert,
+                            archiveClearDays: $archiveClearDays,
+                            archivedMessages: $archivedMessages,
+                            isLoadingArchive: $isLoadingArchive,
+                            showingArchiveBrowser: $showingArchiveBrowser,
+                            archiveSearchText: $archiveSearchText,
+                            selectedArchiveTopic: $selectedArchiveTopic
+                        )
+                        .environmentObject(viewModel)
                     case .preferences:
-                        preferencesSettingsView
+                        PreferencesSettingsView()
                     }
                 }
                 .padding(20)
@@ -145,256 +186,6 @@ struct SettingsView: View {
         }
     }
 
-    // MARK: - Tab Views
-
-    private var connectionSettingsView: some View {
-        VStack(alignment: .leading, spacing: 20) {
-            VStack(alignment: .leading, spacing: 12) {
-                Text("Server configuration")
-                    .font(.headline)
-
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Server URL")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                    TextField("https://ntfy.sh", text: $serverURL)
-                        .textFieldStyle(.roundedBorder)
-
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Topics")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-
-                        // Compact horizontal scrolling topic chips
-                        if !topics.isEmpty {
-                            ScrollView(.horizontal, showsIndicators: false) {
-                                HStack(spacing: 6) {
-                                    ForEach(Array(topics.enumerated()), id: \.element) { index, topic in
-                                        HStack(spacing: 4) {
-                                            Text(topic)
-                                                .font(.caption)
-                                                .foregroundColor(.blue)
-
-                                            Button(action: {
-                                                topics.remove(at: index)
-                                            }) {
-                                                Image(systemName: "xmark.circle.fill")
-                                                    .font(.system(size: 12))
-                                                    .foregroundColor(.secondary.opacity(0.7))
-                                            }
-                                            .buttonStyle(.plain)
-                                        }
-                                        .padding(.horizontal, 8)
-                                        .padding(.vertical, 4)
-                                        .background(Color.blue.opacity(0.1))
-                                        .cornerRadius(12)
-                                    }
-                                }
-                            }
-                            .frame(maxHeight: 30)
-                        }
-
-                        // Compact add topic field
-                        VStack(alignment: .leading, spacing: 4) {
-                            HStack(spacing: 6) {
-                                TextField("Add topics", text: $newTopic)
-                                    .textFieldStyle(.roundedBorder)
-                                    .frame(maxWidth: 200)
-                                    .onSubmit {
-                                        addTopic()
-                                    }
-                                    .onChange(of: newTopic) {
-                                        // Clear error when user types
-                                        if !topicValidationError.isEmpty && !topicValidationError.contains("Added") {
-                                            topicValidationError = ""
-                                        }
-                                        // Auto-lowercase but preserve separators (commas and spaces)
-                                        newTopic = newTopic.lowercased()
-                                    }
-
-                                Button(action: addTopic) {
-                                    Image(systemName: "plus.circle.fill")
-                                        .foregroundColor(.blue)
-                                }
-                                .buttonStyle(.plain)
-                                .disabled(newTopic.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                            }
-
-                            // Validation error or help text
-                            if !topicValidationError.isEmpty {
-                                HStack(spacing: 3) {
-                                    Image(systemName: topicValidationError.contains("Added") ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
-                                        .font(.system(size: 10))
-                                    Text(topicValidationError)
-                                        .font(.caption2)
-                                }
-                                .foregroundColor(topicValidationError.contains("Added") ? .green : .red)
-                            } else if topics.isEmpty {
-                                Text("Examples: 'alerts news' or 'alerts,news' or just 'alerts'")
-                                    .font(.caption2)
-                                    .foregroundColor(.secondary)
-                            } else {
-                                Text("Tip: Separate with spaces or commas (topic1 topic2)")
-                                    .font(.caption2)
-                                    .foregroundColor(.secondary)
-                            }
-                        }
-                    }
-                }
-            }
-
-            VStack(alignment: .leading, spacing: 12) {
-                Text("Authentication")
-                    .font(.headline)
-
-                Picker("", selection: $authMethod) {
-                    ForEach(AuthenticationMethod.allCases, id: \.self) { method in
-                        Text(method.displayName).tag(method)
-                    }
-                }
-                .pickerStyle(.segmented)
-
-                Group {
-                    if authMethod == .basicAuth {
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("Username")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                            TextField("Username", text: $username)
-                                .textFieldStyle(.roundedBorder)
-
-                            Text("Password")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                            SecureField("Password", text: $password)
-                                .textFieldStyle(.roundedBorder)
-
-                            Text("Leave empty for public servers")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                        }
-                    } else {
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("Access token")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                            SecureField("tk_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", text: $accessToken)
-                                .textFieldStyle(.roundedBorder)
-
-                            Text("32-character token starting with 'tk_'")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    private var preferencesSettingsView: some View {
-        VStack(alignment: .leading, spacing: 20) {
-            VStack(alignment: .leading, spacing: 12) {
-                Text("Notifications")
-                    .font(.headline)
-
-                Toggle("Enable notifications", isOn: $enableNotifications)
-
-                Toggle("Auto-connect at launch", isOn: $autoConnect)
-                    .help("Automatically connect to the server when the app starts")
-
-                HStack {
-                    Text("Recent messages: \(maxRecentMessages)")
-                    Spacer()
-                    Stepper("", value: $maxRecentMessages, in: 5...100, step: 5)
-                }
-            }
-
-            VStack(alignment: .leading, spacing: 12) {
-                Text("Appearance")
-                    .font(.headline)
-
-                Picker("Appearance", selection: $appearanceMode) {
-                    ForEach(AppearanceMode.allCases, id: \.self) { mode in
-                        Text(mode.displayName).tag(mode)
-                    }
-                }
-                .pickerStyle(.segmented)
-            }
-
-            VStack(alignment: .leading, spacing: 12) {
-                Text("Notification sounds")
-                    .font(.headline)
-
-                Picker("Sound", selection: $notificationSound) {
-                    ForEach(NotificationSound.allCases, id: \.self) { sound in
-                        Text(sound.displayName).tag(sound)
-                    }
-                }
-                .pickerStyle(.menu)
-
-                Toggle("Use critical sound for high priority messages", isOn: $customSoundForHighPriority)
-                    .help("Play critical alert sound for priority 4 and 5 messages")
-
-                if notificationSound != .default {
-                    Button("Test sound") {
-                        testNotificationSound()
-                    }
-                    .buttonStyle(.bordered)
-                }
-            }
-        }
-    }
-
-    private var fallbackServersView: some View {
-        FallbackServersSettingsView(
-            fallbackServers: $fallbackServers,
-            enableFallbackServers: $enableFallbackServers,
-            fallbackRetryDelay: $fallbackRetryDelay,
-            editingServer: $editingServer,
-            showingServerEditor: $showingServerEditor
-        )
-    }
-
-    private var dndSettingsView: some View {
-        DNDSettingsView(
-            isDNDScheduleEnabled: $isDNDScheduleEnabled,
-            dndStartTime: $dndStartTime,
-            dndEndTime: $dndEndTime,
-            dndDaysOfWeek: $dndDaysOfWeek
-        )
-        .environmentObject(viewModel)
-    }
-
-    private var accessTokensView: some View {
-        AccessTokensSettingsView(
-            serverURL: $serverURL,
-            authMethod: $authMethod,
-            username: $username,
-            password: $password,
-            accessToken: $accessToken,
-            accessTokens: $accessTokens,
-            newTokenLabel: $newTokenLabel,
-            newTokenExpiration: $newTokenExpiration,
-            isGeneratingToken: $isGeneratingToken,
-            generatedToken: $generatedToken,
-            tokenError: $tokenError
-        )
-    }
-
-    private var archiveSettingsView: some View {
-        ArchiveSettingsView(
-            archiveStatistics: $archiveStatistics,
-            isLoadingArchiveStats: $isLoadingArchiveStats,
-            showingClearArchiveAlert: $showingClearArchiveAlert,
-            archiveClearDays: $archiveClearDays,
-            archivedMessages: $archivedMessages,
-            isLoadingArchive: $isLoadingArchive,
-            showingArchiveBrowser: $showingArchiveBrowser,
-            archiveSearchText: $archiveSearchText,
-            selectedArchiveTopic: $selectedArchiveTopic
-        )
-        .environmentObject(viewModel)
-    }
 
     // MARK: - Private Methods
 
@@ -410,97 +201,11 @@ struct SettingsView: View {
     }
 
 
-    private func addTopic() {
-        let input = newTopic.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-
-        // Clear any previous error
-        topicValidationError = ""
-
-        // Check if empty
-        guard !input.isEmpty else {
-            topicValidationError = "Topic cannot be empty"
-            return
-        }
-
-        // Determine separator: if contains comma, use comma; otherwise use space
-        let topicList: [String]
-        if input.contains(",") {
-            // Comma-separated (e.g., "topic1,topic2" or "topic1, topic2")
-            topicList = input.split(separator: ",").map {
-                $0.trimmingCharacters(in: .whitespacesAndNewlines)
-            }
-        } else if input.contains(" ") {
-            // Space-separated (e.g., "topic1 topic2 topic3")
-            topicList = input.split(separator: " ").map {
-                String($0).trimmingCharacters(in: .whitespacesAndNewlines)
-            }.filter { !$0.isEmpty }
-        } else {
-            // Single topic
-            topicList = [input]
-        }
-
-        var addedTopics: [String] = []
-        var invalidTopics: [String] = []
-        var duplicateTopics: [String] = []
-
-        let validPattern = "^[a-z0-9_-]+$"
-        let regex = try? NSRegularExpression(pattern: validPattern)
-
-        for topicName in topicList {
-            // Skip empty entries (from extra commas)
-            guard !topicName.isEmpty else { continue }
-
-            // Check length
-            guard topicName.count <= 64 else {
-                invalidTopics.append("\(topicName) (too long)")
-                continue
-            }
-
-            // Validate format
-            let range = NSRange(location: 0, length: topicName.utf16.count)
-            guard regex?.firstMatch(in: topicName, options: [], range: range) != nil else {
-                invalidTopics.append(topicName)
-                continue
-            }
-
-            // Check for duplicates
-            if topics.contains(topicName) {
-                duplicateTopics.append(topicName)
-                continue
-            }
-
-            topics.append(topicName)
-            addedTopics.append(topicName)
-        }
-
-        // Provide feedback
-        if !invalidTopics.isEmpty {
-            topicValidationError = "Invalid: \(invalidTopics.joined(separator: ", "))"
-        } else if !duplicateTopics.isEmpty && addedTopics.isEmpty {
-            topicValidationError = "Already added: \(duplicateTopics.joined(separator: ", "))"
-        } else if !addedTopics.isEmpty {
-            // Successfully added some topics
-            newTopic = ""
-            topicValidationError = ""
-
-            // Show brief success feedback if some were skipped
-            if !duplicateTopics.isEmpty {
-                topicValidationError = "Added \(addedTopics.count) topic(s), skipped duplicates"
-                // Clear this message after a delay
-                DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-                    self.topicValidationError = ""
-                }
-            }
-        }
-
-        // Clear input only if something was successfully added
-        if !addedTopics.isEmpty {
-            newTopic = ""
-        }
-    }
 
     private func loadCurrentSettings() {
+        Logger.shared.info("⚙️ Loading current settings")
         let settings = SettingsManager.loadSettings()
+        Logger.shared.info("⚙️ Loaded settings: serverURL=\(settings.serverURL), topics=\(settings.topics), authMethod=\(settings.authMethod)")
         serverURL = settings.serverURL
 
         // Filter and validate loaded topics

@@ -46,10 +46,10 @@ struct NtfyMessage: Codable, Identifiable, Equatable {
     }
 }
 
-enum AuthenticationMethod: String, Codable, CaseIterable {
+enum AuthenticationMethod: String, CaseIterable {
     case basicAuth = "basic"
     case accessToken = "token"
-    
+
     var displayName: String {
         switch self {
         case .basicAuth:
@@ -57,6 +57,41 @@ enum AuthenticationMethod: String, Codable, CaseIterable {
         case .accessToken:
             return "Access token"
         }
+    }
+}
+
+extension AuthenticationMethod: Codable {
+    init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+
+        // Try to decode as string first (new format)
+        if let stringValue = try? container.decode(String.self) {
+            if let method = AuthenticationMethod(rawValue: stringValue) {
+                self = method
+                return
+            }
+        }
+
+        // Fall back to integer decoding (old format)
+        if let intValue = try? container.decode(Int.self) {
+            switch intValue {
+            case 0:
+                self = .basicAuth
+            case 1:
+                self = .accessToken
+            default:
+                self = .basicAuth // Default fallback
+            }
+            return
+        }
+
+        // If neither works, default to basicAuth
+        self = .basicAuth
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        try container.encode(self.rawValue)
     }
 }
 
@@ -228,6 +263,128 @@ struct NtfySettings: Codable, Equatable {
     var dndEndTime: Date = Calendar.current.date(bySettingHour: 8, minute: 0, second: 0, of: Date()) ?? Date()
     var dndDaysOfWeek: Set<Int> = Set([1, 2, 3, 4, 5, 6, 7]) // Sunday = 1, Monday = 2, etc.
 
+    // Custom coding keys for manual implementation
+    enum CodingKeys: String, CodingKey {
+        case serverURL, topics, authMethod, username
+        case fallbackServers, enableNotifications, maxRecentMessages, autoConnect
+        case appearanceMode, notificationSound, customSoundForHighPriority
+        case enableFallbackServers, fallbackRetryDelay
+        case isSnoozed, snoozeEndTime, defaultSnoozeDuration
+        case lastClearedTimestamp
+        case isDNDScheduleEnabled, dndStartTime, dndEndTime, dndDaysOfWeek
+    }
+
+    // Custom decoder to handle backwards compatibility with older saved settings
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+
+        // Required fields (should always be present)
+        serverURL = try container.decode(String.self, forKey: .serverURL)
+        topics = try container.decode([String].self, forKey: .topics)
+        authMethod = try container.decode(AuthenticationMethod.self, forKey: .authMethod)
+        username = try container.decode(String.self, forKey: .username)
+
+        // Optional fields with defaults for backwards compatibility
+        fallbackServers = try container.decodeIfPresent([NtfyServer].self, forKey: .fallbackServers) ?? []
+        enableNotifications = try container.decodeIfPresent(Bool.self, forKey: .enableNotifications) ?? true
+        maxRecentMessages = try container.decodeIfPresent(Int.self, forKey: .maxRecentMessages) ?? 20
+        autoConnect = try container.decodeIfPresent(Bool.self, forKey: .autoConnect) ?? true
+        appearanceMode = try container.decodeIfPresent(AppearanceMode.self, forKey: .appearanceMode) ?? .system
+        notificationSound = try container.decodeIfPresent(NotificationSound.self, forKey: .notificationSound) ?? .default
+        customSoundForHighPriority = try container.decodeIfPresent(Bool.self, forKey: .customSoundForHighPriority) ?? true
+        enableFallbackServers = try container.decodeIfPresent(Bool.self, forKey: .enableFallbackServers) ?? false
+        fallbackRetryDelay = try container.decodeIfPresent(Double.self, forKey: .fallbackRetryDelay) ?? 30.0
+
+        // Snooze settings
+        isSnoozed = try container.decodeIfPresent(Bool.self, forKey: .isSnoozed) ?? false
+        snoozeEndTime = try container.decodeIfPresent(Date.self, forKey: .snoozeEndTime)
+        defaultSnoozeDuration = try container.decodeIfPresent(SnoozeDuration.self, forKey: .defaultSnoozeDuration) ?? .thirtyMinutes
+
+        // Message clearing settings
+        lastClearedTimestamp = try container.decodeIfPresent(Date.self, forKey: .lastClearedTimestamp)
+
+        // Do Not Disturb settings
+        isDNDScheduleEnabled = try container.decodeIfPresent(Bool.self, forKey: .isDNDScheduleEnabled) ?? false
+        dndStartTime = try container.decodeIfPresent(Date.self, forKey: .dndStartTime) ?? (Calendar.current.date(bySettingHour: 22, minute: 0, second: 0, of: Date()) ?? Date())
+        dndEndTime = try container.decodeIfPresent(Date.self, forKey: .dndEndTime) ?? (Calendar.current.date(bySettingHour: 8, minute: 0, second: 0, of: Date()) ?? Date())
+        dndDaysOfWeek = try container.decodeIfPresent(Set<Int>.self, forKey: .dndDaysOfWeek) ?? Set([1, 2, 3, 4, 5, 6, 7])
+    }
+
+    // Custom encoder
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+
+        try container.encode(serverURL, forKey: .serverURL)
+        try container.encode(topics, forKey: .topics)
+        try container.encode(authMethod, forKey: .authMethod)
+        try container.encode(username, forKey: .username)
+        try container.encode(fallbackServers, forKey: .fallbackServers)
+        try container.encode(enableNotifications, forKey: .enableNotifications)
+        try container.encode(maxRecentMessages, forKey: .maxRecentMessages)
+        try container.encode(autoConnect, forKey: .autoConnect)
+        try container.encode(appearanceMode, forKey: .appearanceMode)
+        try container.encode(notificationSound, forKey: .notificationSound)
+        try container.encode(customSoundForHighPriority, forKey: .customSoundForHighPriority)
+        try container.encode(enableFallbackServers, forKey: .enableFallbackServers)
+        try container.encode(fallbackRetryDelay, forKey: .fallbackRetryDelay)
+        try container.encode(isSnoozed, forKey: .isSnoozed)
+        try container.encodeIfPresent(snoozeEndTime, forKey: .snoozeEndTime)
+        try container.encode(defaultSnoozeDuration, forKey: .defaultSnoozeDuration)
+        try container.encodeIfPresent(lastClearedTimestamp, forKey: .lastClearedTimestamp)
+        try container.encode(isDNDScheduleEnabled, forKey: .isDNDScheduleEnabled)
+        try container.encode(dndStartTime, forKey: .dndStartTime)
+        try container.encode(dndEndTime, forKey: .dndEndTime)
+        try container.encode(dndDaysOfWeek, forKey: .dndDaysOfWeek)
+    }
+
+    // Default init
+    init() {}
+
+    // Public memberwise initializer for programmatic construction
+    init(serverURL: String = "",
+         fallbackServers: [NtfyServer] = [],
+         topics: [String] = [],
+         authMethod: AuthenticationMethod = .basicAuth,
+         username: String = "",
+         enableNotifications: Bool = true,
+         maxRecentMessages: Int = 20,
+         autoConnect: Bool = true,
+         appearanceMode: AppearanceMode = .system,
+         notificationSound: NotificationSound = .default,
+         customSoundForHighPriority: Bool = true,
+         enableFallbackServers: Bool = false,
+         fallbackRetryDelay: Double = 30.0,
+         isSnoozed: Bool = false,
+         snoozeEndTime: Date? = nil,
+         defaultSnoozeDuration: SnoozeDuration = .thirtyMinutes,
+         lastClearedTimestamp: Date? = nil,
+         isDNDScheduleEnabled: Bool = false,
+         dndStartTime: Date = Calendar.current.date(bySettingHour: 22, minute: 0, second: 0, of: Date()) ?? Date(),
+         dndEndTime: Date = Calendar.current.date(bySettingHour: 8, minute: 0, second: 0, of: Date()) ?? Date(),
+         dndDaysOfWeek: Set<Int> = Set([1, 2, 3, 4, 5, 6, 7])) {
+        self.serverURL = serverURL
+        self.fallbackServers = fallbackServers
+        self.topics = topics
+        self.authMethod = authMethod
+        self.username = username
+        self.enableNotifications = enableNotifications
+        self.maxRecentMessages = maxRecentMessages
+        self.autoConnect = autoConnect
+        self.appearanceMode = appearanceMode
+        self.notificationSound = notificationSound
+        self.customSoundForHighPriority = customSoundForHighPriority
+        self.enableFallbackServers = enableFallbackServers
+        self.fallbackRetryDelay = fallbackRetryDelay
+        self.isSnoozed = isSnoozed
+        self.snoozeEndTime = snoozeEndTime
+        self.defaultSnoozeDuration = defaultSnoozeDuration
+        self.lastClearedTimestamp = lastClearedTimestamp
+        self.isDNDScheduleEnabled = isDNDScheduleEnabled
+        self.dndStartTime = dndStartTime
+        self.dndEndTime = dndEndTime
+        self.dndDaysOfWeek = dndDaysOfWeek
+    }
+
     // Computed property to check if notifications are currently snoozed
     var isCurrentlySnoozed: Bool {
         guard isSnoozed, let endTime = snoozeEndTime else { return false }
@@ -311,12 +468,26 @@ struct NtfySettings: Codable, Equatable {
 
     // Password and token stored separately in Keychain for security
     var isConfigured: Bool {
-        guard !serverURL.isEmpty && !topics.isEmpty else { return false }
+        let serverNotEmpty = !serverURL.isEmpty
+        let topicsNotEmpty = !topics.isEmpty
+        let usernameNotEmpty = !username.isEmpty
+        let isPublicServer = serverURL.contains("ntfy.sh")
+
+        Logger.shared.debug("🔧 isConfigured check: serverURL='\(serverURL)', topics=\(topics), username='\(username)', authMethod=\(authMethod)")
+        Logger.shared.debug("🔧 serverNotEmpty=\(serverNotEmpty), topicsNotEmpty=\(topicsNotEmpty), usernameNotEmpty=\(usernameNotEmpty), isPublicServer=\(isPublicServer)")
+
+        guard serverNotEmpty && topicsNotEmpty else {
+            Logger.shared.debug("🔧 isConfigured=false (missing server or topics)")
+            return false
+        }
 
         switch authMethod {
         case .basicAuth:
-            return !username.isEmpty || serverURL.contains("ntfy.sh") // Public servers don't need auth
+            let result = usernameNotEmpty || isPublicServer
+            Logger.shared.debug("🔧 basicAuth: usernameNotEmpty=\(usernameNotEmpty) || isPublicServer=\(isPublicServer) = \(result)")
+            return result
         case .accessToken:
+            Logger.shared.debug("🔧 accessToken: returning true")
             return true // Token validation happens in Keychain retrieval
         }
     }

@@ -10,15 +10,18 @@ import SwiftUI
 struct ConnectionSettingsView: View {
     @EnvironmentObject var viewModel: NtfyViewModel
 
-    @State private var serverURL: String = ""
-    @State private var topics: [String] = []
+    // Bindings from parent SettingsView
+    @Binding var serverURL: String
+    @Binding var topics: [String]
+    @Binding var authMethod: AuthenticationMethod
+    @Binding var username: String
+    @Binding var password: String
+    @Binding var accessToken: String
+    @Binding var autoConnect: Bool
+
+    // Local UI state
     @State private var newTopic: String = ""
     @State private var topicValidationError: String = ""
-    @State private var authMethod: AuthenticationMethod = .basicAuth
-    @State private var username: String = ""
-    @State private var password: String = ""
-    @State private var accessToken: String = ""
-    @State private var autoConnect: Bool = true
 
     var body: some View {
         ScrollView {
@@ -30,13 +33,10 @@ struct ConnectionSettingsView: View {
             }
             .padding(20)
         }
-        .onAppear {
-            loadSettings()
-        }
         .toolbar {
             ToolbarItem(placement: .confirmationAction) {
                 Button(StringConstants.MenuItems.settings) {
-                    saveSettings()
+                    // Settings are saved via bindings automatically
                 }
                 .disabled(!isFormValid)
             }
@@ -47,7 +47,7 @@ struct ConnectionSettingsView: View {
 
     private var connectionSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Server Connection")
+            Text("Server connection")
                 .font(.headline)
 
             VStack(alignment: .leading, spacing: 8) {
@@ -80,24 +80,28 @@ struct ConnectionSettingsView: View {
             Text("Topics")
                 .font(.headline)
 
-            // Existing topics
-            ForEach(topics, id: \.self) { topic in
-                HStack {
-                    Text(topic)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
+            // Existing topics displayed horizontally with wrapping
+            if !topics.isEmpty {
+                FlowLayout(spacing: 8) {
+                    ForEach(topics, id: \.self) { topic in
+                        HStack(spacing: 4) {
+                            Text(topic)
+                                .font(.system(size: 12))
+
+                            Button(action: {
+                                removeTopic(topic)
+                            }) {
+                                Image(systemName: "xmark.circle.fill")
+                                    .font(.system(size: 12))
+                                    .foregroundColor(.secondary)
+                            }
+                            .buttonStyle(.plain)
+                        }
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 6)
                         .background(Color.blue.opacity(0.1))
-                        .cornerRadius(6)
-
-                    Spacer()
-
-                    Button(action: {
-                        removeTopic(topic)
-                    }) {
-                        Image(systemName: "minus.circle.fill")
-                            .foregroundColor(.red)
+                        .cornerRadius(8)
                     }
-                    .buttonStyle(.plain)
                 }
             }
 
@@ -119,6 +123,64 @@ struct ConnectionSettingsView: View {
                 Text(topicValidationError)
                     .font(.caption)
                     .foregroundColor(.red)
+            }
+        }
+    }
+
+    // FlowLayout for horizontal wrapping display
+    struct FlowLayout: Layout {
+        var spacing: CGFloat = 8
+
+        func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+            let result = FlowResult(
+                in: proposal.replacingUnspecifiedDimensions().width,
+                subviews: subviews,
+                spacing: spacing
+            )
+            return result.size
+        }
+
+        func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+            let result = FlowResult(
+                in: bounds.width,
+                subviews: subviews,
+                spacing: spacing
+            )
+            for (index, subview) in subviews.enumerated() {
+                subview.place(at: CGPoint(x: result.positions[index].x + bounds.minX,
+                                         y: result.positions[index].y + bounds.minY),
+                            proposal: .unspecified)
+            }
+        }
+
+        struct FlowResult {
+            var size: CGSize = .zero
+            var positions: [CGPoint] = []
+
+            init(in maxWidth: CGFloat, subviews: Subviews, spacing: CGFloat) {
+                var currentX: CGFloat = 0
+                var currentY: CGFloat = 0
+                var lineHeight: CGFloat = 0
+                var maxX: CGFloat = 0
+
+                positions.reserveCapacity(subviews.count)
+
+                for subview in subviews {
+                    let size = subview.sizeThatFits(.unspecified)
+
+                    if currentX + size.width > maxWidth && currentX > 0 {
+                        currentX = 0
+                        currentY += lineHeight + spacing
+                        lineHeight = 0
+                    }
+
+                    positions.append(CGPoint(x: currentX, y: currentY))
+                    lineHeight = max(lineHeight, size.height)
+                    currentX += size.width + spacing
+                    maxX = max(maxX, currentX - spacing)
+                }
+
+                self.size = CGSize(width: maxX, height: currentY + lineHeight)
             }
         }
     }
@@ -183,7 +245,7 @@ struct ConnectionSettingsView: View {
 
     private var preferencesSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Connection Preferences")
+            Text("Connection preferences")
                 .font(.headline)
 
             // Connection status
@@ -218,9 +280,16 @@ struct ConnectionSettingsView: View {
 
     private func isValidTopic(_ topic: String) -> Bool {
         let trimmed = topic.trimmingCharacters(in: .whitespacesAndNewlines)
-        return !trimmed.isEmpty &&
-               trimmed.count <= AppConfig.Validation.maxTopicLength &&
-               trimmed.range(of: AppConfig.Validation.topicPattern, options: .regularExpression) != nil
+        let isEmpty = trimmed.isEmpty
+        let isValidLength = trimmed.count <= AppConfig.Validation.maxTopicLength
+        let matchesPattern = trimmed.range(of: AppConfig.Validation.topicPattern, options: .regularExpression) != nil
+
+        Logger.shared.info("🏷️ Validating topic '\(trimmed)':")
+        Logger.shared.info("🏷️   - Length: \(trimmed.count) <= \(AppConfig.Validation.maxTopicLength): \(isValidLength)")
+        Logger.shared.info("🏷️   - Pattern '\(AppConfig.Validation.topicPattern)' matches: \(matchesPattern)")
+        Logger.shared.info("🏷️   - Not empty: \(!isEmpty)")
+
+        return !isEmpty && isValidLength && matchesPattern
     }
 
     private func validateServerURL() {
@@ -231,62 +300,73 @@ struct ConnectionSettingsView: View {
 
     private func addTopic() {
         let trimmed = newTopic.trimmingCharacters(in: .whitespacesAndNewlines)
+        Logger.shared.info("🏷️ Attempting to add topic(s): '\(trimmed)'")
 
         guard !trimmed.isEmpty else {
+            Logger.shared.info("🏷️ Topic is empty, clearing error")
             topicValidationError = ""
             return
         }
 
-        guard isValidTopic(trimmed) else {
-            topicValidationError = StringConstants.ErrorMessages.invalidTopic
-            return
+        // Split by comma and/or space to support multiple topics
+        let separators = CharacterSet(charactersIn: ", ")
+        let potentialTopics = trimmed.components(separatedBy: separators)
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+
+        Logger.shared.info("🏷️ Split input into potential topics: \(potentialTopics)")
+
+        var addedTopics: [String] = []
+        var failedTopics: [String] = []
+        var duplicateTopics: [String] = []
+
+        for topic in potentialTopics {
+            let isValid = isValidTopic(topic)
+            Logger.shared.info("🏷️ Topic validation result for '\(topic)': \(isValid)")
+
+            if !isValid {
+                failedTopics.append(topic)
+                continue
+            }
+
+            if topics.contains(topic) {
+                duplicateTopics.append(topic)
+                continue
+            }
+
+            topics.append(topic)
+            addedTopics.append(topic)
         }
 
-        guard !topics.contains(trimmed) else {
-            topicValidationError = "Topic already exists"
-            return
+        // Provide feedback about what happened
+        if !addedTopics.isEmpty {
+            Logger.shared.info("🏷️ Successfully added topics: \(addedTopics). Topics now: \(topics)")
+            newTopic = ""
+            topicValidationError = ""
         }
 
-        topics.append(trimmed)
-        newTopic = ""
-        topicValidationError = ""
+        if !failedTopics.isEmpty {
+            topicValidationError = "Invalid topic(s): \(failedTopics.joined(separator: ", "))"
+        } else if !duplicateTopics.isEmpty && addedTopics.isEmpty {
+            topicValidationError = "Topic(s) already exist: \(duplicateTopics.joined(separator: ", "))"
+        }
     }
 
     private func removeTopic(_ topic: String) {
         topics.removeAll { $0 == topic }
     }
 
-    private func loadSettings() {
-        let settings = viewModel.settings
-        serverURL = settings.serverURL
-        topics = settings.topics
-        authMethod = settings.authMethod
-        username = settings.username
-        password = SettingsManager.loadPassword(for: settings.username) ?? ""
-        accessToken = SettingsManager.loadAccessToken() ?? ""
-        autoConnect = settings.autoConnect
-    }
-
-    private func saveSettings() {
-        var settings = viewModel.settings
-        settings.serverURL = serverURL.trimmingCharacters(in: .whitespacesAndNewlines)
-        settings.topics = topics
-        settings.authMethod = authMethod
-        settings.username = username.trimmingCharacters(in: .whitespacesAndNewlines)
-        if !password.isEmpty {
-            SettingsManager.savePassword(password, for: settings.username)
-        }
-        let trimmedToken = accessToken.trimmingCharacters(in: .whitespacesAndNewlines)
-        if !trimmedToken.isEmpty {
-            SettingsManager.saveAccessToken(trimmedToken)
-        }
-        settings.autoConnect = autoConnect
-
-        viewModel.updateSettings(settings)
-    }
 }
 
 #Preview {
-    ConnectionSettingsView()
-        .environmentObject(NtfyViewModel())
+    ConnectionSettingsView(
+        serverURL: .constant("https://ntfy.sh"),
+        topics: .constant(["test", "alerts"]),
+        authMethod: .constant(.basicAuth),
+        username: .constant("user"),
+        password: .constant("pass"),
+        accessToken: .constant(""),
+        autoConnect: .constant(true)
+    )
+    .environmentObject(NtfyViewModel())
 }

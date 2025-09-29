@@ -19,10 +19,10 @@ struct DNDSettingsView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
             VStack(alignment: .leading, spacing: 12) {
-                Text("Do Not Disturb schedule")
+                Text("Do not disturb schedule")
                     .font(.headline)
 
-                Toggle("Enable scheduled Do Not Disturb", isOn: $isDNDScheduleEnabled)
+                Toggle("Enable scheduled do not disturb", isOn: $isDNDScheduleEnabled)
                     .help("Automatically block notifications during specified hours")
 
                 if isDNDScheduleEnabled {

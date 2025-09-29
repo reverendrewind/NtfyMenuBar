@@ -22,7 +22,9 @@ class ThemeManager: ObservableObject {
     }
     
     deinit {
+        // Ensure timer is properly cleaned up
         appearanceTimer?.invalidate()
+        appearanceTimer = nil
     }
     
     func setTheme(_ theme: AppearanceMode) {
@@ -31,11 +33,23 @@ class ThemeManager: ObservableObject {
     }
     
     private func setupSystemAppearanceObserver() {
+        // Invalidate any existing timer first
+        appearanceTimer?.invalidate()
+        appearanceTimer = nil
+
         // Monitor for system appearance changes using a timer approach
         // since NSApplication.didChangeEffectiveAppearanceNotification doesn't exist
-        appearanceTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
+        appearanceTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] timer in
+            guard let self = self else {
+                // If self is deallocated, invalidate the timer
+                timer.invalidate()
+                return
+            }
+
             Task { @MainActor [weak self] in
-                self?.updateTheme()
+                guard let self = self else { return }
+
+                self.updateTheme()
             }
         }
     }

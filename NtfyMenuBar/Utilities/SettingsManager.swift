@@ -19,11 +19,47 @@ struct SettingsManager {
     }
 
     static func loadSettings() -> NtfySettings {
-        guard let data = UserDefaults.standard.data(forKey: settingsKey),
-              let settings = try? JSONDecoder().decode(NtfySettings.self, from: data) else {
-            return .default
+        print("🔍 SettingsManager.loadSettings() called")
+
+        // Try loading from current UserDefaults first
+        if let data = UserDefaults.standard.data(forKey: settingsKey) {
+            print("🔍 Found settings data in standard UserDefaults: \(data.count) bytes")
+            do {
+                let settings = try JSONDecoder().decode(NtfySettings.self, from: data)
+                print("🔍 Successfully decoded settings from standard: serverURL=\(settings.serverURL), topics=\(settings.topics), username=\(settings.username)")
+                Logger.shared.info("⚙️ Loaded settings: serverURL=\(settings.serverURL), topics=\(settings.topics)")
+                return settings
+            } catch {
+                print("🔍 Failed to decode settings from standard: \(error)")
+            }
         }
-        return settings
+
+        // Try to directly read from the sandboxed plist file
+        let sandboxedPlistPath = FileManager.default.homeDirectoryForCurrentUser
+            .appendingPathComponent("Library/Containers/net.raczej.NtfyMenuBar/Data/Library/Preferences/net.raczej.NtfyMenuBar.plist")
+
+        if FileManager.default.fileExists(atPath: sandboxedPlistPath.path),
+           let plistData = NSDictionary(contentsOf: sandboxedPlistPath),
+           let settingsData = plistData[settingsKey] as? Data {
+            print("🔍 Found settings data in sandboxed plist: \(settingsData.count) bytes")
+            do {
+                let settings = try JSONDecoder().decode(NtfySettings.self, from: settingsData)
+                print("🔍 Successfully decoded settings from sandboxed plist: serverURL=\(settings.serverURL), topics=\(settings.topics), username=\(settings.username)")
+
+                // Migrate to standard UserDefaults for future use
+                UserDefaults.standard.set(settingsData, forKey: settingsKey)
+                print("🔍 Migrated settings from sandbox to standard UserDefaults")
+
+                Logger.shared.info("⚙️ Loaded settings: serverURL=\(settings.serverURL), topics=\(settings.topics)")
+                return settings
+            } catch {
+                print("🔍 Failed to decode settings from sandboxed plist: \(error)")
+            }
+        }
+
+        print("🔍 No settings data found in any UserDefaults location")
+        Logger.shared.info("⚙️ No settings data found in UserDefaults")
+        return .default
     }
     
     static func savePassword(_ password: String, for username: String) {

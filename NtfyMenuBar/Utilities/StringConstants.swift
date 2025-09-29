@@ -32,16 +32,16 @@ struct StringConstants {
 
     // MARK: - Menu Items
     struct MenuItems {
-        static let openDashboard = "Open Dashboard"
+        static let openDashboard = "Open dashboard"
         static let settings = "Settings..."
         static let connect = "Connect"
         static let disconnect = "Disconnect"
-        static let clearMessages = "Clear Messages"
+        static let clearMessages = "Clear messages"
         static let quit = "Quit"
         static let noRecentMessages = "No recent messages"
-        static let recentMessages = "Recent Messages"
-        static let snoozeNotifications = "Snooze Notifications"
-        static let clearSnooze = "Clear Snooze"
+        static let recentMessages = "Recent messages"
+        static let snoozeNotifications = "Snooze notifications"
+        static let clearSnooze = "Clear snooze"
     }
 
     // MARK: - Window Titles
@@ -64,19 +64,19 @@ struct StringConstants {
         static let topic = "Topic"
         static let username = "Username"
         static let password = "Password"
-        static let accessToken = "Access Token"
-        static let enableNotifications = "Enable Notifications"
-        static let autoConnect = "Auto Connect"
-        static let maxRecentMessages = "Max Recent Messages"
+        static let accessToken = "Access token"
+        static let enableNotifications = "Enable notifications"
+        static let autoConnect = "Auto connect"
+        static let maxRecentMessages = "Max recent messages"
         static let appearanceMode = "Appearance"
-        static let notificationSound = "Notification Sound"
-        static let customSoundForHighPriority = "Custom Sound for High Priority"
+        static let notificationSound = "Notification sound"
+        static let customSoundForHighPriority = "Custom sound for high priority"
     }
 
     // MARK: - Settings Placeholders
     struct SettingsPlaceholders {
         static let serverUrlExample = "e.g., https://ntfy.sh or https://ntfy.example.com"
-        static let topicExample = "e.g., my-notifications"
+        static let topicExample = "e.g., topic1, topic2 or topic1 topic2"
         static let usernamePlaceholder = "Username"
         static let passwordPlaceholder = "Password"
         static let tokenPlaceholder = "Access token (tk_...)"
@@ -128,8 +128,9 @@ struct StringConstants {
 
     // MARK: - Authentication Methods
     struct AuthMethods {
-        static let basicAuth = "Basic Authentication"
-        static let bearerToken = "Bearer Token"
+        static let basicAuth = "Basic authentication"
+        static let bearerToken = "Bearer token"
+        static let accessToken = "Access token"
     }
 
     // MARK: - Appearance Modes
