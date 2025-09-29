@@ -93,9 +93,9 @@ class TokenManager {
             request.httpBody = try JSONSerialization.data(withJSONObject: requestBody)
         }
 
-        print("🔑 Generating token at: \(url)")
-        print("🔑 Request headers: \(request.allHTTPHeaderFields ?? [:])")
-        print("🔑 Request body: \(requestBody)")
+        Logger.shared.debug("🔑 Generating token at: \(url)")
+        Logger.shared.debug("🔑 Request headers: \(request.allHTTPHeaderFields ?? [:])")
+        Logger.shared.debug("🔑 Request body: \(requestBody)")
 
         do {
             let (data, response) = try await URLSession.shared.data(for: request)
@@ -104,11 +104,11 @@ class TokenManager {
                 throw TokenError.invalidResponse
             }
 
-            print("🔑 HTTP Status: \(httpResponse.statusCode)")
-            print("🔑 Response headers: \(httpResponse.allHeaderFields)")
+            Logger.shared.debug("🔑 HTTP Status: \(httpResponse.statusCode)")
+            Logger.shared.debug("🔑 Response headers: \(httpResponse.allHeaderFields)")
 
             if let responseString = String(data: data, encoding: .utf8) {
-                print("🔑 Response body: \(responseString)")
+                Logger.shared.debug("🔑 Response body: \(responseString)")
             }
 
             guard httpResponse.statusCode == 200 else {
@@ -128,7 +128,7 @@ class TokenManager {
                 created: Date()
             )
 
-            print("✅ Token generated successfully: \(accessToken.maskedToken)")
+            Logger.shared.info("✅ Token generated successfully: \(accessToken.maskedToken)")
             return accessToken
 
         } catch let error as TokenError {

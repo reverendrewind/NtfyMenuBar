@@ -263,28 +263,15 @@ struct NtfySettings: Codable, Equatable {
     var dndEndTime: Date = Calendar.current.date(bySettingHour: 8, minute: 0, second: 0, of: Date()) ?? Date()
     var dndDaysOfWeek: Set<Int> = Set([1, 2, 3, 4, 5, 6, 7]) // Sunday = 1, Monday = 2, etc.
 
-    // Custom coding keys for manual implementation
-    enum CodingKeys: String, CodingKey {
-        case serverURL, topics, authMethod, username
-        case fallbackServers, enableNotifications, maxRecentMessages, autoConnect
-        case appearanceMode, notificationSound, customSoundForHighPriority
-        case enableFallbackServers, fallbackRetryDelay
-        case isSnoozed, snoozeEndTime, defaultSnoozeDuration
-        case lastClearedTimestamp
-        case isDNDScheduleEnabled, dndStartTime, dndEndTime, dndDaysOfWeek
-    }
-
-    // Custom decoder to handle backwards compatibility with older saved settings
+    // Custom decoder for backwards compatibility - encoder uses automatic synthesis
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
 
-        // Required fields (should always be present)
-        serverURL = try container.decode(String.self, forKey: .serverURL)
-        topics = try container.decode([String].self, forKey: .topics)
-        authMethod = try container.decode(AuthenticationMethod.self, forKey: .authMethod)
-        username = try container.decode(String.self, forKey: .username)
-
-        // Optional fields with defaults for backwards compatibility
+        // Decode all fields with defaults for backwards compatibility
+        serverURL = try container.decodeIfPresent(String.self, forKey: .serverURL) ?? ""
+        topics = try container.decodeIfPresent([String].self, forKey: .topics) ?? []
+        authMethod = try container.decodeIfPresent(AuthenticationMethod.self, forKey: .authMethod) ?? .basicAuth
+        username = try container.decodeIfPresent(String.self, forKey: .username) ?? ""
         fallbackServers = try container.decodeIfPresent([NtfyServer].self, forKey: .fallbackServers) ?? []
         enableNotifications = try container.decodeIfPresent(Bool.self, forKey: .enableNotifications) ?? true
         maxRecentMessages = try container.decodeIfPresent(Int.self, forKey: .maxRecentMessages) ?? 20
@@ -294,47 +281,24 @@ struct NtfySettings: Codable, Equatable {
         customSoundForHighPriority = try container.decodeIfPresent(Bool.self, forKey: .customSoundForHighPriority) ?? true
         enableFallbackServers = try container.decodeIfPresent(Bool.self, forKey: .enableFallbackServers) ?? false
         fallbackRetryDelay = try container.decodeIfPresent(Double.self, forKey: .fallbackRetryDelay) ?? 30.0
-
-        // Snooze settings
         isSnoozed = try container.decodeIfPresent(Bool.self, forKey: .isSnoozed) ?? false
         snoozeEndTime = try container.decodeIfPresent(Date.self, forKey: .snoozeEndTime)
         defaultSnoozeDuration = try container.decodeIfPresent(SnoozeDuration.self, forKey: .defaultSnoozeDuration) ?? .thirtyMinutes
-
-        // Message clearing settings
         lastClearedTimestamp = try container.decodeIfPresent(Date.self, forKey: .lastClearedTimestamp)
-
-        // Do Not Disturb settings
         isDNDScheduleEnabled = try container.decodeIfPresent(Bool.self, forKey: .isDNDScheduleEnabled) ?? false
         dndStartTime = try container.decodeIfPresent(Date.self, forKey: .dndStartTime) ?? (Calendar.current.date(bySettingHour: 22, minute: 0, second: 0, of: Date()) ?? Date())
         dndEndTime = try container.decodeIfPresent(Date.self, forKey: .dndEndTime) ?? (Calendar.current.date(bySettingHour: 8, minute: 0, second: 0, of: Date()) ?? Date())
         dndDaysOfWeek = try container.decodeIfPresent(Set<Int>.self, forKey: .dndDaysOfWeek) ?? Set([1, 2, 3, 4, 5, 6, 7])
     }
 
-    // Custom encoder
-    func encode(to encoder: Encoder) throws {
-        var container = encoder.container(keyedBy: CodingKeys.self)
-
-        try container.encode(serverURL, forKey: .serverURL)
-        try container.encode(topics, forKey: .topics)
-        try container.encode(authMethod, forKey: .authMethod)
-        try container.encode(username, forKey: .username)
-        try container.encode(fallbackServers, forKey: .fallbackServers)
-        try container.encode(enableNotifications, forKey: .enableNotifications)
-        try container.encode(maxRecentMessages, forKey: .maxRecentMessages)
-        try container.encode(autoConnect, forKey: .autoConnect)
-        try container.encode(appearanceMode, forKey: .appearanceMode)
-        try container.encode(notificationSound, forKey: .notificationSound)
-        try container.encode(customSoundForHighPriority, forKey: .customSoundForHighPriority)
-        try container.encode(enableFallbackServers, forKey: .enableFallbackServers)
-        try container.encode(fallbackRetryDelay, forKey: .fallbackRetryDelay)
-        try container.encode(isSnoozed, forKey: .isSnoozed)
-        try container.encodeIfPresent(snoozeEndTime, forKey: .snoozeEndTime)
-        try container.encode(defaultSnoozeDuration, forKey: .defaultSnoozeDuration)
-        try container.encodeIfPresent(lastClearedTimestamp, forKey: .lastClearedTimestamp)
-        try container.encode(isDNDScheduleEnabled, forKey: .isDNDScheduleEnabled)
-        try container.encode(dndStartTime, forKey: .dndStartTime)
-        try container.encode(dndEndTime, forKey: .dndEndTime)
-        try container.encode(dndDaysOfWeek, forKey: .dndDaysOfWeek)
+    private enum CodingKeys: String, CodingKey {
+        case serverURL, topics, authMethod, username, fallbackServers
+        case enableNotifications, maxRecentMessages, autoConnect
+        case appearanceMode, notificationSound, customSoundForHighPriority
+        case enableFallbackServers, fallbackRetryDelay
+        case isSnoozed, snoozeEndTime, defaultSnoozeDuration
+        case lastClearedTimestamp
+        case isDNDScheduleEnabled, dndStartTime, dndEndTime, dndDaysOfWeek
     }
 
     // Default init

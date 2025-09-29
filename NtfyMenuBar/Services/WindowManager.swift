@@ -49,8 +49,8 @@ class WindowManager: NSObject, NSWindowDelegate {
         // Calculate position relative to status button
         let position = calculateDashboardPosition(button: button, windowSize: windowSize)
 
-        print("📍 Button screen rect: \(button.window!.convertToScreen(button.frame))")
-        print("📍 Window position: x=\(position.x), y=\(position.y)")
+        Logger.shared.debug("📍 Button screen rect: \(button.window!.convertToScreen(button.frame))")
+        Logger.shared.debug("📍 Window position: x=\(position.x), y=\(position.y)")
 
         // Create dashboard window
         let window = DashboardWindow(

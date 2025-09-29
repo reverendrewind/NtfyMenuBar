@@ -133,7 +133,7 @@ class NtfyService: ObservableObject {
         fallbackHandler.reset()
         isConnected = false
         activeServer = nil
-        print("❌ Disconnected from ntfy")
+        Logger.shared.info("❌ Disconnected from ntfy")
     }
     
     func updateSettings(_ newSettings: NtfySettings) {
@@ -153,7 +153,7 @@ class NtfyService: ObservableObject {
 
         let topicsString = settings.topics.joined(separator: ",")
         let urlString = "\(baseURL)/\(topicsString)/json"
-        print("🌐 Creating SSE URL for server \(server.displayName) with topics [\(topicsString)]: \(urlString)")
+        Logger.shared.debug("🌐 Creating SSE URL for server \(server.displayName) with topics [\(topicsString)]: \(urlString)")
 
         return URL(string: urlString)
     }
@@ -190,12 +190,12 @@ class NtfyService: ObservableObject {
             
             // Skip keepalive and open messages
             guard !ntfyMessage.isKeepalive && ntfyMessage.event != "open" else { 
-                print("📋 Skipping \(ntfyMessage.event) event")
+                Logger.shared.debug("📋 Skipping \(ntfyMessage.event) event")
                 return 
             }
             
             await MainActor.run {
-                print("📨 Received message: \(ntfyMessage.message ?? "No message")")
+                Logger.shared.debug("📨 Received message: \(ntfyMessage.message ?? "No message")")
 
                 // Update last message time for connection quality tracking
                 self.lastMessageTime = Date()
@@ -218,8 +218,8 @@ class NtfyService: ObservableObject {
                 }
             }
         } catch {
-            print("❌ Failed to decode message: \(error)")
-            print("Raw data: \(line)")
+            Logger.shared.error("❌ Failed to decode message: \(error)")
+            Logger.shared.debug("Raw data: \(line)")
         }
     }
     
@@ -229,7 +229,7 @@ class NtfyService: ObservableObject {
     private func updateConnectionQuality(_ quality: ConnectionQuality) {
         guard connectionQuality != quality else { return }
         connectionQuality = quality
-        print("📊 Connection quality updated: \(quality.description)")
+        Logger.shared.debug("📊 Connection quality updated: \(quality.description)")
     }
 
     private func updateConnectionQualityBasedOnActivity() {
@@ -329,6 +329,6 @@ extension NtfyService: FallbackHandlerDelegate {
     }
 
     func fallbackHandler(_ handler: FallbackHandler, willRetryAllServersAfterDelay delay: TimeInterval) {
-        print("🔄 All servers failed - will retry all servers in \(delay) seconds")
+        Logger.shared.warning("🔄 All servers failed - will retry all servers in \(delay) seconds")
     }
 }

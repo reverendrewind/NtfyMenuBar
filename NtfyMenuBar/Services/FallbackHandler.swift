@@ -67,7 +67,7 @@ class FallbackHandler: ObservableObject {
         // Check if server recently failed and should be skipped temporarily
         if let failureTime = serverFailureTimes[server.url],
            Date().timeIntervalSince(failureTime) < settings.fallbackRetryDelay {
-            print("🚫 FallbackHandler: Skipping server \(server.displayName) - recently failed")
+            Logger.shared.debug("🚫 FallbackHandler: Skipping server \(server.displayName) - recently failed")
             currentServerIndex += 1
             tryNextServer(servers: servers, settings: settings)
             return
@@ -75,7 +75,7 @@ class FallbackHandler: ObservableObject {
 
         // Ask delegate if we should try this server
         if delegate?.fallbackHandler(self, shouldTryServer: server) == true {
-            print("🔗 FallbackHandler: Trying server [\(currentServerIndex + 1)/\(servers.count)]: \(server.displayName)")
+            Logger.shared.info("🔗 FallbackHandler: Trying server [\(currentServerIndex + 1)/\(servers.count)]: \(server.displayName)")
         } else {
             // Move to next server if delegate says no
             currentServerIndex += 1
@@ -90,7 +90,7 @@ class FallbackHandler: ObservableObject {
     }
 
     private func scheduleRetryAllServers(delay: TimeInterval, servers: [NtfyServer], settings: NtfySettings) {
-        print("🔄 FallbackHandler: All servers failed - will retry all servers in \(delay) seconds")
+        Logger.shared.warning("🔄 FallbackHandler: All servers failed - will retry all servers in \(delay) seconds")
         delegate?.fallbackHandler(self, willRetryAllServersAfterDelay: delay)
 
         fallbackTimer?.invalidate()
