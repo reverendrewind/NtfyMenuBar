@@ -13,6 +13,7 @@ struct EmptyStateView: View {
             Image(systemName: "bell.slash")
                 .font(.title2)
                 .foregroundColor(.secondary)
+                .accessibilityHidden(true)
 
             Text("No notifications yet")
                 .font(.caption)
@@ -20,5 +21,8 @@ struct EmptyStateView: View {
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 20)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("No notifications yet")
+        .accessibilityAddTraits(.isStaticText)
     }
 }

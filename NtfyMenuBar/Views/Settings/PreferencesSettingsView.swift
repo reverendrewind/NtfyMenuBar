@@ -8,14 +8,14 @@
 import SwiftUI
 
 struct PreferencesSettingsView: View {
-    @EnvironmentObject var viewModel: NtfyViewModel
     @EnvironmentObject var themeManager: ThemeManager
 
-    @State private var enableNotifications: Bool = true
-    @State private var maxRecentMessages: Int = 20
-    @State private var currentTheme: AppearanceMode = .system
-    @State private var notificationSound: NotificationSound = .default
-    @State private var customSoundForHighPriority: Bool = true
+    // Bindings from parent SettingsView
+    @Binding var enableNotifications: Bool
+    @Binding var maxRecentMessages: Int
+    @Binding var appearanceMode: AppearanceMode
+    @Binding var notificationSound: NotificationSound
+    @Binding var customSoundForHighPriority: Bool
 
     var body: some View {
         ScrollView {
@@ -27,16 +27,6 @@ struct PreferencesSettingsView: View {
                 aboutSection
             }
             .padding(20)
-        }
-        .onAppear {
-            loadSettings()
-        }
-        .toolbar {
-            ToolbarItem(placement: .confirmationAction) {
-                Button("Save") {
-                    saveSettings()
-                }
-            }
         }
     }
 
@@ -65,13 +55,13 @@ struct PreferencesSettingsView: View {
             Text("Appearance")
                 .font(.headline)
 
-            Picker(StringConstants.SettingsLabels.appearanceMode, selection: $currentTheme) {
+            Picker(StringConstants.SettingsLabels.appearanceMode, selection: $appearanceMode) {
                 Text(StringConstants.AppearanceModes.light).tag(AppearanceMode.light)
                 Text(StringConstants.AppearanceModes.dark).tag(AppearanceMode.dark)
                 Text(StringConstants.AppearanceModes.system).tag(AppearanceMode.system)
             }
             .pickerStyle(.segmented)
-            .onChange(of: currentTheme) { _, newTheme in
+            .onChange(of: appearanceMode) { _, newTheme in
                 themeManager.setTheme(newTheme)
             }
 
@@ -172,32 +162,16 @@ struct PreferencesSettingsView: View {
         }
     }
 
-    // MARK: - Helper Methods
-
-    private func loadSettings() {
-        let settings = viewModel.settings
-        enableNotifications = settings.enableNotifications
-        maxRecentMessages = settings.maxRecentMessages
-        currentTheme = themeManager.currentTheme
-        notificationSound = settings.notificationSound
-        customSoundForHighPriority = settings.customSoundForHighPriority
-    }
-
-    private func saveSettings() {
-        var settings = viewModel.settings
-        settings.enableNotifications = enableNotifications
-        settings.maxRecentMessages = maxRecentMessages
-        settings.notificationSound = notificationSound
-        settings.customSoundForHighPriority = customSoundForHighPriority
-
-        viewModel.updateSettings(settings)
-        themeManager.setTheme(currentTheme)
-    }
 }
 
 
 #Preview {
-    PreferencesSettingsView()
-        .environmentObject(NtfyViewModel())
-        .environmentObject(ThemeManager())
+    PreferencesSettingsView(
+        enableNotifications: .constant(true),
+        maxRecentMessages: .constant(20),
+        appearanceMode: .constant(.system),
+        notificationSound: .constant(.default),
+        customSoundForHighPriority: .constant(true)
+    )
+    .environmentObject(ThemeManager())
 }

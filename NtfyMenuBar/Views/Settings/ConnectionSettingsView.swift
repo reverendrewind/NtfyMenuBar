@@ -33,14 +33,6 @@ struct ConnectionSettingsView: View {
             }
             .padding(20)
         }
-        .toolbar {
-            ToolbarItem(placement: .confirmationAction) {
-                Button(StringConstants.MenuItems.settings) {
-                    // Settings are saved via bindings automatically
-                }
-                .disabled(!isFormValid)
-            }
-        }
     }
 
     // MARK: - Connection Section
@@ -96,6 +88,7 @@ struct ConnectionSettingsView: View {
                                     .foregroundColor(.secondary)
                             }
                             .buttonStyle(.plain)
+                            .accessibilityLabel("Remove topic \(topic)")
                         }
                         .padding(.horizontal, 10)
                         .padding(.vertical, 6)
@@ -256,9 +249,11 @@ struct ConnectionSettingsView: View {
                 if viewModel.isConnected {
                     Label(StringConstants.StatusMessages.connected, systemImage: "checkmark.circle.fill")
                         .foregroundColor(.green)
+                        .accessibilityLabel("Connection status: Connected")
                 } else {
                     Label(StringConstants.StatusMessages.disconnected, systemImage: "xmark.circle.fill")
                         .foregroundColor(.red)
+                        .accessibilityLabel("Connection status: Disconnected")
                 }
             }
         }

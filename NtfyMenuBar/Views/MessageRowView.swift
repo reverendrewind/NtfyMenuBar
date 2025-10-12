@@ -46,19 +46,24 @@ struct MessageRowView: View {
                         Text(emojiForTag(tag))
                             .font(.caption)
                     }
-                    
+
                     if tags.count > UIConstants.MenuBar.recentMessagesLimit {
                         Text("+\(tags.count - UIConstants.MenuBar.recentMessagesLimit)")
                             .font(.caption2)
                             .foregroundColor(.secondary)
                     }
                 }
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel("Tags: \(tags.joined(separator: ", "))")
             }
         }
         .padding(.horizontal, 8)
         .padding(.vertical, 2)
         .background(Color.theme.cardBackground)
         .cornerRadius(6)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(accessibilityDescription)
+        .accessibilityAddTraits(.isButton)
     }
     
     private var timeString: String {
@@ -66,7 +71,27 @@ struct MessageRowView: View {
         formatter.unitsStyle = .abbreviated
         return formatter.localizedString(for: message.date, relativeTo: Date())
     }
-    
+
+    private var accessibilityDescription: String {
+        let priorityText = priorityDescription
+        let messageText = message.message ?? StringConstants.NotificationContent.noMessage
+        let tagsText = message.tags?.isEmpty == false ?
+            "Tags: \(message.tags!.joined(separator: ", "))." : ""
+
+        return "\(priorityText) \(message.displayTitle): \(messageText). Topic: \(message.topic). \(timeString). \(tagsText)"
+    }
+
+    private var priorityDescription: String {
+        switch message.priority {
+        case 5: return "Urgent priority."
+        case 4: return "High priority."
+        case 3: return "Normal priority."
+        case 2: return "Low priority."
+        case 1: return "Minimal priority."
+        default: return ""
+        }
+    }
+
     private static let tagEmojiMap: [(keywords: [String], emoji: String)] = [
         // System/server tags (highest priority)
         (["urgent", "critical"], "🚨"),

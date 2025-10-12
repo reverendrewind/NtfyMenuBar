@@ -116,12 +116,14 @@ class MenuBuilder {
     private func addSnoozeStatusItems(to menu: NSMenu) {
         guard let viewModel = viewModel else { return }
 
+        let statusText = "Snoozed until \(viewModel.snoozeStatusText)"
         let snoozeStatusItem = NSMenuItem(
-            title: "🔕 \(viewModel.snoozeStatusText)",
+            title: statusText,
             action: nil,
             keyEquivalent: ""
         )
         snoozeStatusItem.isEnabled = false
+        snoozeStatusItem.setAccessibilityLabel(statusText)
         menu.addItem(snoozeStatusItem)
 
         let clearSnoozeItem = NSMenuItem(

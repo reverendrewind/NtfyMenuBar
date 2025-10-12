@@ -127,7 +127,15 @@ class WindowManager: NSObject, NSWindowDelegate {
     }
 
     private func configureSettingsWindow(_ window: NSWindow, hostingController: NSHostingController<some View>) {
-        window.title = StringConstants.WindowTitles.settings
+        // Show app name in title bar
+        let appName = Bundle.main.object(forInfoDictionaryKey: "CFBundleName") as? String ?? "NtfyMenuBar"
+        window.title = appName
+        window.subtitle = "Settings"
+
+        // Force title visibility with TabView
+        window.titlebarAppearsTransparent = false
+        window.titleVisibility = .visible
+
         window.contentViewController = hostingController
         window.isReleasedWhenClosed = false
         window.delegate = self

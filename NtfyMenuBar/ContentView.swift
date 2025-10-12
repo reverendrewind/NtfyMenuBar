@@ -59,6 +59,9 @@ struct ContentView: View {
         .padding()
         .frame(width: UIConstants.Dashboard.width, height: UIConstants.Dashboard.height)
         .background(Color.theme.windowBackground)
+        .onChange(of: filteredMessages.count) { _ in
+            announceFilterResults()
+        }
         .onExitCommand {
             // Close on Escape key
             if let window = NSApplication.shared.keyWindow {
@@ -98,6 +101,7 @@ struct ContentView: View {
                     Text("\(filteredMessages.count) of \(viewModel.messages.count) messages")
                         .font(.caption)
                         .foregroundColor(.secondary)
+                        .accessibilityAddTraits(.updatesFrequently)
 
                     Spacer()
 
@@ -105,6 +109,8 @@ struct ContentView: View {
                         clearAllFilters()
                     }
                     .font(.caption)
+                    .accessibilityLabel("Clear all active filters")
+                    .accessibilityHint("Removes search text and priority filters")
                 }
                 .padding(.bottom, 4)
             }
@@ -147,5 +153,25 @@ struct ContentView: View {
         selectedPriorities.removeAll()
         selectedTopics.removeAll()
         showFilterOptions = false
+    }
+
+    private func announceFilterResults() {
+        guard hasActiveFilters else { return }
+
+        let announcement = "Showing \(filteredMessages.count) of \(viewModel.messages.count) messages"
+
+        // Post accessibility announcement
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            if let window = NSApplication.shared.keyWindow {
+                NSAccessibility.post(
+                    element: window,
+                    notification: .announcementRequested,
+                    userInfo: [
+                        .announcement: announcement,
+                        .priority: NSAccessibilityPriorityLevel.medium
+                    ]
+                )
+            }
+        }
     }
 }

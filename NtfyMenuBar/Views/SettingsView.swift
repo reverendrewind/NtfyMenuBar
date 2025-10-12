@@ -82,25 +82,10 @@ struct SettingsView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            // Header
-            VStack(alignment: .leading, spacing: 12) {
-                // Tab Selection
-                Picker("", selection: $selectedTab) {
-                    ForEach(SettingsTab.allCases, id: \.self) { tab in
-                        Label(tab.rawValue, systemImage: tab.systemImage)
-                            .tag(tab)
-                    }
-                }
-                .pickerStyle(.segmented)
-            }
-            .padding(20)
-            .padding(.bottom, 0)
-
-            // Content
-            ScrollView {
-                VStack(alignment: .leading, spacing: 20) {
-                    switch selectedTab {
-                    case .connection:
+            // Tabs with native macOS tab bar
+            TabView(selection: $selectedTab) {
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 20) {
                         ConnectionSettingsView(
                             serverURL: $serverURL,
                             topics: $topics,
@@ -110,7 +95,18 @@ struct SettingsView: View {
                             accessToken: $accessToken,
                             autoConnect: $autoConnect
                         )
-                    case .tokens:
+                    }
+                    .padding(20)
+                }
+                .tabItem {
+                    Label("Connection", systemImage: "network")
+                }
+                .tag(SettingsTab.connection)
+                .accessibilityLabel("Connection tab")
+                .accessibilityHint("Switch to connection settings")
+
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 20) {
                         AccessTokensSettingsView(
                             serverURL: $serverURL,
                             authMethod: $authMethod,
@@ -124,7 +120,18 @@ struct SettingsView: View {
                             generatedToken: $generatedToken,
                             tokenError: $tokenError
                         )
-                    case .fallbacks:
+                    }
+                    .padding(20)
+                }
+                .tabItem {
+                    Label("Access tokens", systemImage: "key.fill")
+                }
+                .tag(SettingsTab.tokens)
+                .accessibilityLabel("Access tokens tab")
+                .accessibilityHint("Switch to access tokens settings")
+
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 20) {
                         FallbackServersSettingsView(
                             fallbackServers: $fallbackServers,
                             enableFallbackServers: $enableFallbackServers,
@@ -132,7 +139,18 @@ struct SettingsView: View {
                             editingServer: $editingServer,
                             showingServerEditor: $showingServerEditor
                         )
-                    case .dnd:
+                    }
+                    .padding(20)
+                }
+                .tabItem {
+                    Label("Fallback servers", systemImage: "server.rack")
+                }
+                .tag(SettingsTab.fallbacks)
+                .accessibilityLabel("Fallback servers tab")
+                .accessibilityHint("Switch to fallback servers settings")
+
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 20) {
                         DNDSettingsView(
                             isDNDScheduleEnabled: $isDNDScheduleEnabled,
                             dndStartTime: $dndStartTime,
@@ -140,7 +158,18 @@ struct SettingsView: View {
                             dndDaysOfWeek: $dndDaysOfWeek
                         )
                         .environmentObject(viewModel)
-                    case .archive:
+                    }
+                    .padding(20)
+                }
+                .tabItem {
+                    Label("Do Not Disturb", systemImage: "moon.zzz")
+                }
+                .tag(SettingsTab.dnd)
+                .accessibilityLabel("Do Not Disturb tab")
+                .accessibilityHint("Switch to Do Not Disturb settings")
+
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 20) {
                         ArchiveSettingsView(
                             archiveStatistics: $archiveStatistics,
                             isLoadingArchiveStats: $isLoadingArchiveStats,
@@ -153,12 +182,34 @@ struct SettingsView: View {
                             selectedArchiveTopic: $selectedArchiveTopic
                         )
                         .environmentObject(viewModel)
-                    case .preferences:
-                        PreferencesSettingsView()
                     }
+                    .padding(20)
                 }
-                .padding(20)
-                .padding(.top, 0)
+                .tabItem {
+                    Label("Message Archive", systemImage: "archivebox")
+                }
+                .tag(SettingsTab.archive)
+                .accessibilityLabel("Message Archive tab")
+                .accessibilityHint("Switch to message archive settings")
+
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 20) {
+                        PreferencesSettingsView(
+                            enableNotifications: $enableNotifications,
+                            maxRecentMessages: $maxRecentMessages,
+                            appearanceMode: $appearanceMode,
+                            notificationSound: $notificationSound,
+                            customSoundForHighPriority: $customSoundForHighPriority
+                        )
+                    }
+                    .padding(20)
+                }
+                .tabItem {
+                    Label("Preferences", systemImage: "gearshape")
+                }
+                .tag(SettingsTab.preferences)
+                .accessibilityLabel("Preferences tab")
+                .accessibilityHint("Switch to preferences settings")
             }
 
             // Footer
@@ -167,6 +218,7 @@ struct SettingsView: View {
                     dismiss()
                 }
                 .buttonStyle(.bordered)
+                .keyboardShortcut(.cancelAction)
 
                 Spacer()
 
@@ -174,10 +226,12 @@ struct SettingsView: View {
                     saveSettings()
                 }
                 .buttonStyle(.borderedProminent)
+                .keyboardShortcut(.defaultAction)
                 .disabled(!isValidConfiguration)
             }
             .padding(20)
             .padding(.top, 0)
+            .accessibilityElement(children: .contain)
         }
         .frame(width: UIConstants.Settings.width, height: UIConstants.Settings.height)
         .background(Color.theme.windowBackground)

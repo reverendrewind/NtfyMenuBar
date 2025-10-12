@@ -43,14 +43,18 @@ class StatusBarController: NSObject, ObservableObject, WindowManagerDelegate {
     
     private func setupStatusItem() {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
-        
+
         if let button = statusItem?.button {
             // Set the icon
             if let image = NSImage(named: StringConstants.Assets.menuBarIcon) {
                 image.isTemplate = true // Enable template rendering for dark/light mode
                 button.image = image
             }
-            
+
+            // Set up accessibility
+            button.setAccessibilityTitle("Ntfy Notifications")
+            button.setAccessibilityLabel("Ntfy menu bar, click to open dashboard, right-click for menu")
+
             // Set up actions
             button.action = #selector(statusItemClicked)
             button.target = self
@@ -87,6 +91,9 @@ class StatusBarController: NSObject, ObservableObject, WindowManagerDelegate {
                 image.isTemplate = true
                 button.image = image
                 button.toolTip = "Notifications snoozed - \(viewModel.snoozeStatusText)"
+                // Update accessibility for snoozed state
+                button.setAccessibilityTitle("Ntfy Notifications (Snoozed)")
+                button.setAccessibilityLabel("Ntfy menu bar, notifications snoozed until \(viewModel.snoozeStatusText), click to open dashboard")
             }
         } else {
             // Use normal ntfy bell icon
@@ -94,6 +101,9 @@ class StatusBarController: NSObject, ObservableObject, WindowManagerDelegate {
                 image.isTemplate = true
                 button.image = image
                 button.toolTip = "ntfy Notifications"
+                // Update accessibility for normal state
+                button.setAccessibilityTitle("Ntfy Notifications")
+                button.setAccessibilityLabel("Ntfy menu bar, click to open dashboard, right-click for menu")
             }
         }
     }

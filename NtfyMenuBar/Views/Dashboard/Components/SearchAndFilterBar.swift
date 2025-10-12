@@ -28,6 +28,8 @@ struct SearchAndFilterBar: View {
                     .textFieldStyle(.plain)
                     .font(.caption)
                     .focused($isSearchFocused)
+                    .accessibilityLabel("Search messages")
+                    .accessibilityHint("Type to filter messages by title or content")
 
                 if !searchText.isEmpty {
                     Button {
@@ -38,6 +40,7 @@ struct SearchAndFilterBar: View {
                             .foregroundColor(.secondary)
                     }
                     .buttonStyle(.plain)
+                    .accessibilityLabel("Clear search")
                 }
             }
             .padding(.horizontal, 8)
@@ -56,11 +59,14 @@ struct SearchAndFilterBar: View {
                         Circle()
                             .fill(Color.blue)
                             .frame(width: 6, height: 6)
+                            .accessibilityHidden(true)
                     }
                 }
                 .foregroundColor(hasActiveFilters ? .blue : .secondary)
             }
             .buttonStyle(.plain)
+            .accessibilityLabel(hasActiveFilters ? "Filters (active)" : "Filters")
+            .accessibilityHint("Opens filter options for priorities and topics")
             .popover(isPresented: $showFilterOptions) {
                 FilterOptionsView(
                     searchText: $searchText,

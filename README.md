@@ -67,6 +67,28 @@ curl -X POST https://ntfy.sh/your-topic \
 - 2: Low (🔵)
 - 1: Minimal (⚪)
 
+## Keyboard Shortcuts
+
+- **⌘F** - Focus search field
+- **⌘,** - Open Settings
+- **⌘Q** - Quit application
+- **⌘W** - Close window
+- **Escape** - Close current window
+- **Tab** - Navigate between controls
+- **Space/Return** - Activate buttons and controls
+
+## Accessibility
+
+NtfyMenuBar supports macOS accessibility features:
+
+- **VoiceOver** - Full screen reader support (⌘F5 to toggle)
+- **Full Keyboard Access** - Complete keyboard navigation
+- **Display Accommodations** - High contrast, reduce motion, color filters
+- **Dynamic Type** - Respects system text size preferences
+- **Voice Control** - Navigate and control via voice commands
+
+For accessibility feedback, please [open an issue](https://github.com/reverendrewind/NtfyMenuBar/issues).
+
 ## Building from Source
 
 ```bash

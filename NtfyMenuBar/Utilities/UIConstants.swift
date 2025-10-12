@@ -20,9 +20,9 @@ struct UIConstants {
 
     // MARK: - Settings Window
     struct Settings {
-        static let width: CGFloat = 700
+        static let width: CGFloat = 850
         static let height: CGFloat = 750
-        static let fallbackWidth: CGFloat = 700
+        static let fallbackWidth: CGFloat = 850
         static let fallbackHeight: CGFloat = 650
         static let menuBarHeight: CGFloat = 25
         static let topGap: CGFloat = 10
